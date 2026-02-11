@@ -18,7 +18,7 @@ export default function LoginPage() {
     setError(null);
 
     // Map username to internal email
-    const email = username.includes('@') ? username : `${username}@fanger.design`;
+    const email = username === 'ianp' ? 'ian9franco@gmail.com' : (username.includes('@') ? username : `${username}@fanger.design`);
 
     try {
       if (!supabase) throw new Error('Base de datos no conectada. Revisa Vercel env vars.');
