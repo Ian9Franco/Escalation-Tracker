@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { Campaign, WeeklyRecord, Client, FREQUENCY_PREFIX, FREQUENCY_LABELS } from '@/lib/types';
@@ -9,7 +10,7 @@ import {
   TrendingUp, Plus, ChevronRight, Activity, Calendar, 
   Target, Users, Briefcase, ChevronDown, CheckCircle2,
   MoreVertical, Pause, Trash2, Percent, Play, Clock,
-  Moon, Sun, AlertTriangle
+  Moon, Sun, AlertTriangle, LogOut
 } from 'lucide-react';
 import { NewClientModal } from '@/components/NewClientModal';
 import { NewCampaignModal } from '@/components/NewCampaignModal';
@@ -23,6 +24,7 @@ export default function Dashboard() {
   const [records, setRecords] = useState<WeeklyRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const router = useRouter();
 
   // Modals & Menus
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
@@ -37,8 +39,24 @@ export default function Dashboard() {
       const isDark = document.documentElement.classList.contains('dark');
       setTheme(isDark ? 'dark' : 'light');
     }
+    checkAuth();
     fetchInitialData();
   }, []);
+
+  async function checkAuth() {
+    if (!supabase) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      router.push('/login');
+    }
+  }
+
+  async function handleLogout() {
+    if (!supabase) return;
+    await supabase.auth.signOut();
+    router.push('/login');
+    router.refresh();
+  }
 
   const toggleTheme = () => {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
@@ -277,6 +295,15 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+
+          <button
+              onClick={handleLogout}
+              className="p-3 rounded-xl hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all bg-secondary/30 border border-white/5 group flex items-center gap-2"
+              title="Cerrar Sesión"
+          >
+              <LogOut className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
+              <span className="text-[10px] font-black uppercase tracking-widest hidden md:block">Salir</span>
+          </button>
         </div>
       </nav>
 
