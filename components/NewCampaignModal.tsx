@@ -66,6 +66,7 @@ export function NewCampaignModal({ isOpen, onClose, onSuccess, clients, initialC
     setLoading(true);
 
     try {
+      if (!supabase) throw new Error('Base de datos no configurada. Revisa las variables de entorno.');
       const { data: campaign, error: campError } = await supabase
         .from('campaigns')
         .insert([{

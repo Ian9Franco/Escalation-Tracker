@@ -9,7 +9,7 @@ import {
   TrendingUp, Plus, ChevronRight, Activity, Calendar, 
   Target, Users, Briefcase, ChevronDown, CheckCircle2,
   MoreVertical, Pause, Trash2, Percent, Play, Clock,
-  Moon, Sun
+  Moon, Sun, AlertTriangle
 } from 'lucide-react';
 import { NewClientModal } from '@/components/NewClientModal';
 import { NewCampaignModal } from '@/components/NewCampaignModal';
@@ -203,6 +203,17 @@ export default function Dashboard() {
 
   return (
     <main className="p-4 md:p-10 max-w-7xl mx-auto min-h-screen">
+      {!supabase && (
+        <div className="mb-8 p-4 bg-destructive/10 border border-destructive/20 rounded-[1.5rem] flex items-center gap-4 text-destructive animate-in slide-in-from-top-4 duration-500">
+          <div className="bg-destructive/10 p-2 rounded-xl">
+             <AlertTriangle className="w-6 h-6" />
+          </div>
+          <div>
+            <p className="font-black uppercase italic text-xs tracking-widest leading-none mb-1">Base de datos no conectada</p>
+            <p className="text-sm font-bold opacity-80">Configura las variables de entorno en Vercel para ver tus datos.</p>
+          </div>
+        </div>
+      )}
       {/* Premium Navbar */}
       <nav className="flex justify-between items-center mb-16 card-widget p-5 bg-card/10 backdrop-blur-xl border-white/5">
         <Link href="/" className="flex items-center gap-5 group/logo transition-all hover:opacity-80">
@@ -280,7 +291,8 @@ export default function Dashboard() {
         </div>
         <button 
           onClick={() => setIsCampaignModalOpen(true)}
-          className="bg-accent text-white px-8 py-4 rounded-2xl font-black flex items-center gap-3 shadow-[0_10px_40px_-10px_rgba(255,69,0,0.5)] hover:scale-[1.05] transition-all text-lg uppercase italic"
+          disabled={!supabase}
+          className="bg-accent text-white px-8 py-4 rounded-2xl font-black flex items-center gap-3 shadow-[0_10px_40px_-10px_rgba(255,69,0,0.5)] hover:scale-[1.05] transition-all text-lg uppercase italic disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed"
         >
           <Plus className="w-6 h-6" /> Nueva Campaña
         </button>

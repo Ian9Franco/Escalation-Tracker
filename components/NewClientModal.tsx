@@ -18,6 +18,7 @@ export function NewClientModal({ isOpen, onClose, onSuccess }: NewClientModalPro
 
     setLoading(true);
     try {
+      if (!supabase) throw new Error('Base de datos no configurada. Revisa las variables de entorno.');
       const { error } = await supabase.from('clients').insert([{ name }]);
       if (error) throw error;
       
