@@ -24,3 +24,4 @@ All notable changes to the **Escalation Tracker** will be documented in this fil
 - **Light Mode Build Issue**: Corrected the theme initialization script to ensure Light Mode works properly and consistently across sessions.
 - **TypeScript Exports**: Fixed `CampaignType` export issues in `lib/types.ts` that were causing build failures.
 - **Build Compatibility**: Simplified `globals.css` to standard CSS to avoid @apply issues with Next.js Turbo.
+- **Vercel Prerendering**: Fixed the hard crash during deployment by adding safety checks for `NEXT_PUBLIC_SUPABASE_URL` during build-time static generation and marking pages as `force-dynamic`.
