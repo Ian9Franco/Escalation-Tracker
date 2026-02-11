@@ -14,6 +14,8 @@ import {
 import { NewClientModal } from '@/components/NewClientModal';
 import { NewCampaignModal } from '@/components/NewCampaignModal';
 
+export const dynamic = 'force-dynamic';
+
 export default function Dashboard() {
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
@@ -57,6 +59,10 @@ export default function Dashboard() {
   }, [selectedClient]);
 
   async function fetchInitialData() {
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
     try {
       const { data: clientList, error } = await supabase.from('clients').select('*').order('name');
       if (error) throw error;
@@ -74,6 +80,7 @@ export default function Dashboard() {
   }
 
   async function fetchCampaignData(clientId: string) {
+    if (!supabase) return;
     setLoading(true);
     try {
       const { data: camps } = await supabase
