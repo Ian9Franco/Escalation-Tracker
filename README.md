@@ -1,36 +1,64 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 📈 Escalation Tracker
 
-## Getting Started
+Plataforma inteligente para el seguimiento y escalación progresiva de presupuestos en campañas de marketing digital (Meta Ads, Google Ads, etc.).
 
-First, run the development server:
+## 🚀 Características Principales
+
+- **Dashboard Inteligente**: Visualización clara del presupuesto actual, metas de inmersión y progreso.
+- **Estrategias Flexibles**:
+  - Configuración de incremento porcentual personalizado por campaña.
+  - Frecuencias variables: Diario, Cada 3 días, Semanal o Mensual.
+- **Auto-Cálculo de Metas**: El sistema calcula automáticamente cuántos períodos y en qué fecha exacta se alcanzará el presupuesto meta.
+- **Gestión Multi-Cliente**: Administra múltiples clientes y sus campañas de forma independiente.
+- **Controles Granulares**:
+  - Avance manual por campaña.
+  - Pausar/Reanudar escalación.
+  - Override de porcentaje para ajustes puntuales.
+- **Seguridad**: Soporte para Row Level Security (RLS) via Supabase.
+
+## 🛠️ Stack Tecnológico
+
+- **Frontend**: Next.js 15+ (App Router, TypeScript)
+- **Base de Datos**: Supabase (PostgreSQL)
+- **Estilos**: Vanilla CSS con variables modernas y Glassmorphism.
+- **Iconos**: Lucide React.
+
+## 🚦 Configuración Rápida
+
+### 1. Clonar el repositorio
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/Ian9Franco/Escalation-Tracker.git
+cd Escalation-Tracker
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Variables de Entorno
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Crea un archivo `.env.local` con tus credenciales de Supabase:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```env
+NEXT_PUBLIC_SUPABASE_URL=tu_url_de_supabase
+NEXT_PUBLIC_SUPABASE_ANON_KEY=tu_clave_publica_anon
+```
 
-## Learn More
+### 3. Base de Datos
 
-To learn more about Next.js, take a look at the following resources:
+Ve al SQL Editor de tu proyecto en Supabase y ejecuta el contenido de:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `sql/Consolidated-App-Schema.sql`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 4. Lanzar en Local
 
-## Deploy on Vercel
+```bash
+npm install
+npm run dev
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 📄 Estructura de Archivos SQL
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `sql/Consolidated-App-Schema.sql`: Estructura completa y "maestra" del proyecto.
+- `sql/Fix-Schema.sql`: Migraciones incrementales para bases de datos ya existentes.
+
+---
+
+Desarrollado para optimizar la escalación de presupuestos publicitarios de forma profesional y basada en datos.

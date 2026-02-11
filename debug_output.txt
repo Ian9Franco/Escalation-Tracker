@@ -1,0 +1,40 @@
+[dotenv@17.2.4] injecting env (2) from .env.local -- tip: ⚙️  override existing env vars with { override: true }
+=== DEBUGGING DB ===
+Found 5 campaigns and 21 records.
+
+CAMPAIGN: "Sillón Miller" (ID: 29db84d9-6843-4ea7-afc8-54448e8876b0)
+  Type: campaign_budget, Status: active
+  - Week 1: $2300 [Label: "NULL"]
+  - Week 2: $2760 [Label: "NULL"]
+  - Week 3: $3312 [Label: "NULL"]
+
+CAMPAIGN: "Jula" (ID: b42bff95-735b-4626-bf5d-c5539eb30d73)
+  Type: campaign_budget, Status: paused
+  - Week 0: $1500 [Label: "NULL"]
+  - Week 1: $1500 [Label: "NULL"]
+  - Week 2: $0 [Label: "NULL"]
+  - Week 3: $0 [Label: "NULL"]
+
+CAMPAIGN: "Flujo al local" (ID: 13c052ca-33d0-47db-9edc-eb3645e759cf)
+  Type: campaign_budget, Status: active
+  - Week 1: $2300 [Label: "NULL"]
+  - Week 2: $2760 [Label: "NULL"]
+  - Week 3: $3312 [Label: "NULL"]
+
+CAMPAIGN: "Sillas Bistró" (ID: 81af9c4b-598e-4c02-830c-3848e6109f97)
+  Type: adset_budget, Status: active
+  - Week 1: $2300 [Label: "Sillas Bistró"]
+  - Week 2: $2760 [Label: "Sillas Bistró"]
+  - Week 3: $3312 [Label: "Sillas Bistró"]
+
+CAMPAIGN: "Silla Wishbone" (ID: 59f12006-07c2-4b53-b7ef-69490124922e)
+  Type: mixed_budget, Status: active
+  - Week 1: $1300 [Label: "Wishbone - Pinamar"]
+  - Week 1: $1000 [Label: "Wishbone - General"]
+  - Week 2: $1560 [Label: "Wishbone - Pinamar"]
+  - Week 2: $1200 [Label: "Wishbone - General"]
+  - Week 3: $2800 [Label: "Pinamar"]
+  - Week 3: $2160 [Label: "General"]
+  - Week 3: $1872 [Label: "Wishbone - Pinamar"]
+  - Week 3: $1440 [Label: "Wishbone - General"]
+
