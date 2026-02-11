@@ -165,7 +165,14 @@ export default function Home() {
             </div>
             
             <div className="flex gap-8">
-               <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">© 2026 Internal Utility</span>
+               <a 
+                 href="https://ian-pontorno-portfolio.vercel.app/" 
+                 target="_blank" 
+                 rel="noopener noreferrer"
+                 className="text-[10px] font-black uppercase text-muted-foreground tracking-widest hover:text-accent transition-colors"
+               >
+                 © 2026 Ian Pontorno
+               </a>
                <Link href="/dashboard" className="text-[10px] font-black uppercase text-accent tracking-widest hover:underline decoration-2 underline-offset-4">Dashboard</Link>
             </div>
          </div>
