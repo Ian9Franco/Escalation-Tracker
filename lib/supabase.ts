@@ -1,16 +1,13 @@
-import { createClient } from "@supabase/supabase-js";
+import { createBrowserClient } from '@supabase/ssr'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 
-// We export a client that might be uninitialized if variables are missing (common during Vercel build phase)
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn(
-    "Supabase credentials missing. Check your environment variables.",
-  );
+  console.warn('Supabase credentials missing. Check your environment variables.');
 }
 
-export const supabase =
-  supabaseUrl && supabaseAnonKey
-    ? createClient(supabaseUrl, supabaseAnonKey)
-    : (null as any);
+export const supabase = (supabaseUrl && supabaseAnonKey) 
+  ? createBrowserClient(supabaseUrl, supabaseAnonKey)
+  : null as any;
+
