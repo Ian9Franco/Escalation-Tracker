@@ -30,9 +30,10 @@ export default function LoginPage() {
 
       if (signInError) throw signInError;
 
-      router.push('/dashboard');
-      router.refresh();
+      console.log('Login success, redirecting...');
+      window.location.href = '/dashboard';
     } catch (err: any) {
+      console.error('Login error:', err);
       setError(err.message === 'Invalid login credentials' ? 'Credenciales incorrectas' : err.message);
     } finally {
       setLoading(false);
