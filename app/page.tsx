@@ -155,14 +155,19 @@ export default function Home() {
       {/* Footer */}
       <footer className="py-20 border-t border-white/5 px-6">
          <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-10">
-            <div className="flex items-center gap-4 group">
+            <a 
+              href="https://www.fangerdesign.com.ar/contacto/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center gap-4 group cursor-pointer hover:opacity-80 transition-opacity"
+            >
               <img 
                 src="/android-chrome-192x192.png" 
                 alt="Logo" 
                 className="w-8 h-8 rounded-full border border-white/10"
               />
-              <span className="font-black uppercase italic text-sm tracking-tighter opacity-40">fanger.design</span>
-            </div>
+              <span className="font-black uppercase italic text-sm tracking-tighter opacity-40 group-hover:opacity-100 transition-opacity">fanger.design</span>
+            </a>
             
             <div className="flex gap-8">
                <a 

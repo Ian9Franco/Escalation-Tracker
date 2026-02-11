@@ -544,14 +544,19 @@ export default function Dashboard() {
       {/* Simple Footer */}
       <footer className="py-20 border-t border-border mt-20 opacity-60 hover:opacity-100 transition-opacity">
          <div className="flex flex-col md:flex-row justify-between items-center gap-10">
-            <div className="flex items-center gap-4 group">
+            <a 
+              href="https://www.fangerdesign.com.ar/contacto/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center gap-4 group cursor-pointer hover:opacity-80 transition-opacity"
+            >
               <img 
                 src="/android-chrome-192x192.png" 
                 alt="Logo" 
                 className="w-8 h-8 rounded-full border border-white/10"
               />
               <span className="font-black uppercase italic text-sm tracking-tighter">fanger.design</span>
-            </div>
+            </a>
             
             <div className="flex gap-8">
                <a 
