@@ -1,318 +1,318 @@
-'use client';
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { X, TrendingUp, Target, Calendar, Clock, Zap } from 'lucide-react';
-import { Client, FREQUENCY_LABELS, FREQUENCY_DAYS } from '@/lib/types';
+import { Client, CampaignType, STRATEGY_FREQUENCY, FREQUENCY_LABELS } from '@/lib/types';
+import { X, Target, Save, Briefcase, Calendar, Info, Layers, Clock } from 'lucide-react';
 
-interface Props {
+interface NewCampaignModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
   clients: Client[];
-  initialClientId?: string | null;
+  initialClientId: string | null;
 }
 
-export function NewCampaignModal({ isOpen, onClose, onSuccess, clients, initialClientId }: Props) {
+export function NewCampaignModal({ isOpen, onClose, onSuccess, clients, initialClientId }: NewCampaignModalProps) {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [formData, setFormData] = useState({
+    client_id: initialClientId || '',
+    name: '',
+    type: 'campaign_budget' as CampaignType,
+    currency: 'ARS',
+    current_week: 1,
+    initial_budget: '',
+    increment_strategy: '0.20',
+    target_budget: '',
+    target_week: '',
+    estimated_target_date: '',
+    strategy_frequency: 'weekly' as STRATEGY_FREQUENCY
+  });
 
-  // Form State
-  const [clientId, setClientId] = useState(initialClientId || '');
-  const [name, setName] = useState('');
-  const [type, setType] = useState('campaign_budget');
-  const [initialBudget, setInitialBudget] = useState('');
-  const [targetBudget, setTargetBudget] = useState('');
-  const [targetWeek, setTargetWeek] = useState('');
-  const [currentWeek, setCurrentWeek] = useState('1');
-  const [strategy, setStrategy] = useState('20');
-  const [frequency, setFrequency] = useState('weekly');
-  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
+  const [advancedLabels, setAdvancedLabels] = useState<string>('');
 
-  // Auto-calculate target periods and date
-  const calculation = useMemo(() => {
-    const initial = parseFloat(initialBudget);
-    const target = parseFloat(targetBudget);
-    const pct = parseFloat(strategy) / 100;
-
-    if (!initial || !target || !pct || initial <= 0 || target <= initial || pct <= 0) {
-      return null;
+  useEffect(() => {
+    if (initialClientId) {
+      setFormData(prev => ({ ...prev, client_id: initialClientId }));
     }
+  }, [initialClientId]);
 
-    const periods = Math.ceil(Math.log(target / initial) / Math.log(1 + pct));
-    const daysPerPeriod = FREQUENCY_DAYS[frequency] || 7;
-    const totalDays = periods * daysPerPeriod;
+  useEffect(() => {
+    if (formData.initial_budget && formData.target_budget && formData.increment_strategy) {
+      const initial = Number(formData.initial_budget);
+      const target = Number(formData.target_budget);
+      const strategy = Number(formData.increment_strategy);
+      const freq = formData.strategy_frequency;
 
-    const start = new Date(startDate);
-    const endDate = new Date(start);
-    endDate.setDate(endDate.getDate() + totalDays);
+      if (target > initial && strategy > 0) {
+        const weeksNeeded = Math.ceil(Math.log(target / initial) / Math.log(1 + strategy));
+        const estimatedWeek = formData.current_week + weeksNeeded;
+        
+        setFormData(prev => ({ ...prev, target_week: String(estimatedWeek) }));
 
-    return {
-      periods,
-      totalDays,
-      endDate,
-      endDateStr: endDate.toLocaleDateString('es-AR', { 
-        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' 
-      }),
-    };
-  }, [initialBudget, targetBudget, strategy, frequency, startDate]);
+        let daysToAdd = 0;
+        if (freq === 'daily') daysToAdd = weeksNeeded;
+        else if (freq === 'every_3_days') daysToAdd = weeksNeeded * 3;
+        else if (freq === 'weekly') daysToAdd = weeksNeeded * 7;
+        else if (freq === 'monthly') daysToAdd = weeksNeeded * 30;
 
-  if (!isOpen) return null;
+        const targetDate = new Date();
+        targetDate.setDate(targetDate.getDate() + daysToAdd);
+        setFormData(prev => ({ ...prev, estimated_target_date: targetDate.toISOString() }));
+      }
+    }
+  }, [formData.initial_budget, formData.target_budget, formData.increment_strategy, formData.current_week, formData.strategy_frequency]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!clientId) return setError('Selecciona un cliente');
-
     setLoading(true);
-    setError('');
-
-    const pct = parseFloat(strategy) / 100;
-    // Use manually entered target week, or auto-calculated, or null
-    const finalTargetWeek = targetWeek 
-      ? parseInt(targetWeek) 
-      : calculation?.periods || null;
 
     try {
-      const { data: camp, error: campErr } = await supabase
+      const { data: campaign, error: campError } = await supabase
         .from('campaigns')
-        .insert({
-          client_id: clientId,
-          name,
-          type,
+        .insert([{
+          client_id: formData.client_id,
+          name: formData.name,
+          type: formData.type,
+          currency: formData.currency,
+          current_week: formData.current_week,
+          increment_strategy: formData.increment_strategy,
+          target_budget: formData.target_budget ? Number(formData.target_budget) : null,
+          target_week: formData.target_week ? Number(formData.target_week) : null,
+          estimated_target_date: formData.estimated_target_date || null,
           status: 'active',
-          current_week: parseInt(currentWeek),
-          increment_strategy: pct,
-          strategy_frequency: frequency,
-          start_date: startDate,
-          estimated_target_date: calculation?.endDate?.toISOString().split('T')[0] || null,
-          target_budget: targetBudget ? parseFloat(targetBudget) : null,
-          target_week: finalTargetWeek
-        })
+          strategy_frequency: formData.strategy_frequency
+        }])
         .select()
         .single();
-      
-      if (campErr) throw campErr;
 
-      // Insert initial record
-      if (initialBudget) {
-        const { error: recErr } = await supabase
-          .from('weekly_records')
-          .insert({
-            campaign_id: camp.id,
-            week_number: parseInt(currentWeek),
-            budget: parseFloat(initialBudget),
-            is_projection: false,
-            advanced_at: new Date().toISOString()
+      if (campError) throw campError;
+
+      const records = [];
+      const budget = Number(formData.initial_budget);
+
+      if (formData.type === 'campaign_budget') {
+        records.push({
+          campaign_id: campaign.id,
+          week_number: formData.current_week,
+          budget: budget,
+          is_projection: false
+        });
+      } else {
+        const labels = advancedLabels.split('\n').map(l => l.trim()).filter(l => l);
+        if (labels.length === 0) throw new Error('Ingresa al menos un conjunto');
+        const budgetPerLabel = budget / labels.length;
+        for (const label of labels) {
+          records.push({
+            campaign_id: campaign.id,
+            week_number: formData.current_week,
+            label: label,
+            budget: Math.round(budgetPerLabel * 100) / 100,
+            is_projection: false
           });
-        
-        if (recErr) throw recErr;
+        }
       }
-      
-      // Reset & Close
-      setName('');
-      setInitialBudget('');
-      setTargetBudget('');
-      setTargetWeek('');
-      setStrategy('20');
-      setFrequency('weekly');
+
+      const { error: recError } = await supabase.from('weekly_records').insert(records);
+      if (recError) throw recError;
+
       onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Error al crear campaña');
+      alert('Error: ' + err.message);
     } finally {
       setLoading(false);
     }
   }
 
-  const frequencyLabel = frequency === 'weekly' ? 'Semana' : frequency === 'daily' ? 'Día' : frequency === 'every_3_days' ? 'Período' : 'Mes';
+  if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-[#111] border border-white/10 rounded-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200 shadow-2xl shadow-blue-900/10 max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/5">
-          <h3 className="font-bold flex items-center gap-2 text-lg">
-            <TrendingUp className="w-5 h-5 text-blue-500" /> Nueva Campaña
-          </h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
-            <X className="w-5 h-5" />
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-xl z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300">
+      <div className="bg-card border border-border rounded-[2.5rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] w-full max-w-2xl overflow-hidden max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-300">
+        <div className="flex justify-between items-center p-8 border-b border-border bg-secondary/20">
+          <div className="flex items-center gap-4">
+            <div className="bg-accent/20 p-3 rounded-2xl">
+              <Target className="w-8 h-8 text-accent" />
+            </div>
+            <div>
+              <h2 className="text-3xl font-black text-foreground tracking-tight">Nueva Campaña</h2>
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Configura la estrategia de escalado</p>
+            </div>
+          </div>
+          <button 
+            onClick={onClose}
+            className="p-2 hover:bg-secondary rounded-full transition-colors text-muted-foreground"
+          >
+            <X className="w-8 h-8" />
           </button>
         </div>
-        
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
-          {/* Row 1: Client + Name */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="label">Cliente</label>
-              <select 
-                value={clientId}
-                onChange={e => setClientId(e.target.value)}
-                className="input"
-                required
-              >
-                <option value="">Seleccionar...</option>
-                {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-            </div>
 
-            <div>
-              <label className="label">Tipo de Presupuesto</label>
-              <select 
-                value={type} 
-                onChange={e => setType(e.target.value)} 
-                className="input"
-              >
-                <option value="campaign_budget">Campaña (ABO/CBO)</option>
-                <option value="adset_budget">Conjunto de Anuncios</option>
-                <option value="mixed_budget">Mixto</option>
-              </select>
-            </div>
-
-            <div className="col-span-2">
-              <label className="label">Nombre de la Campaña</label>
-              <input 
-                type="text" 
-                value={name}
-                onChange={e => setName(e.target.value)}
-                className="input"
-                placeholder="Ej: Black Friday Sale"
-                required
-              />
-            </div>
-          </div>
-
-          {/* Row 2: Strategy Config */}
-          <div className="border-t border-white/5 pt-4">
-            <label className="label text-green-400 flex items-center gap-2 mb-3">
-              <Zap className="w-4 h-4" /> Estrategia de Aumento
-            </label>
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <label className="text-[10px] text-gray-500 uppercase font-bold mb-1 block">Porcentaje (%)</label>
-                <input 
-                  type="number" 
-                  value={strategy}
-                  onChange={e => setStrategy(e.target.value)}
-                  className="input font-mono text-lg"
-                  placeholder="20"
-                  min="0"
-                  step="1"
+        <form onSubmit={handleSubmit} className="p-8 overflow-y-auto flex-1 space-y-10">
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+            {/* Column 1 */}
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <label className="block text-[10px] font-black uppercase text-muted-foreground tracking-widest pl-1 flex items-center gap-2">
+                  <Briefcase className="w-3 h-3" /> Cliente
+                </label>
+                <select 
                   required
-                />
-              </div>
-              <div>
-                <label className="text-[10px] text-gray-500 uppercase font-bold mb-1 block">Frecuencia</label>
-                <select
-                  value={frequency}
-                  onChange={e => setFrequency(e.target.value)}
-                  className="input"
+                  value={formData.client_id}
+                  onChange={(e) => setFormData({...formData, client_id: e.target.value})}
+                  className="w-full bg-secondary border border-border rounded-2xl px-5 py-4 font-bold text-foreground focus:ring-4 focus:ring-accent/20 transition-all outline-none appearance-none cursor-pointer"
                 >
-                  {Object.entries(FREQUENCY_LABELS).map(([key, label]) => (
-                    <option key={key} value={key}>{label}</option>
-                  ))}
+                  <option value="" disabled>Seleccionar cliente...</option>
+                  {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </div>
-              <div>
-                <label className="text-[10px] text-gray-500 uppercase font-bold mb-1 block">{frequencyLabel} de Inicio</label>
-                <input 
-                  type="number" 
-                  value={currentWeek}
-                  onChange={e => setCurrentWeek(e.target.value)}
-                  className="input"
-                  min="1"
-                  required
-                />
-              </div>
-            </div>
-          </div>
 
-          {/* Row 3: Budget & Target */}
-          <div className="border-t border-white/5 pt-4">
-            <label className="label text-blue-400 flex items-center gap-2 mb-3">
-              <Target className="w-4 h-4" /> Objetivos & Presupuesto
-            </label>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-[10px] text-gray-500 uppercase font-bold mb-1 block">Presupuesto Inicial ($)</label>
-                <input 
-                  type="number" 
-                  value={initialBudget}
-                  onChange={e => setInitialBudget(e.target.value)}
-                  className="input font-mono text-lg"
-                  placeholder="0.00"
-                  step="0.01"
-                  required
-                />
-              </div>
-              <div>
-                <label className="text-[10px] text-gray-500 uppercase font-bold mb-1 block">Meta de Inversión ($)</label>
-                <input 
-                  type="number" 
-                  value={targetBudget}
-                  onChange={e => setTargetBudget(e.target.value)}
-                  className="input font-mono text-lg border-blue-500/20 focus:border-blue-500"
-                  placeholder="Opcional"
-                  step="0.01"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] text-gray-500 uppercase font-bold mb-1 block">Fecha de Inicio</label>
+              <div className="space-y-2">
+                <label className="block text-[10px] font-black uppercase text-muted-foreground tracking-widest pl-1">Nombre</label>
                 <input
-                  type="date"
-                  value={startDate}
-                  onChange={e => setStartDate(e.target.value)}
-                  className="input"
+                  required
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  className="w-full bg-secondary border border-border rounded-2xl px-5 py-4 font-black text-foreground focus:ring-4 focus:ring-accent/20 transition-all outline-none"
+                  placeholder="Ej. Traffic - Cold"
                 />
               </div>
-              <div>
-                <label className="text-[10px] text-gray-500 uppercase font-bold mb-1 block">{frequencyLabel} Objetivo</label>
-                <input 
-                  type="number" 
-                  value={targetWeek}
-                  onChange={e => setTargetWeek(e.target.value)}
-                  className="input"
-                  placeholder={calculation ? `Auto: ${calculation.periods}` : 'Ej: 8'}
-                />
+
+              <div className="space-y-3">
+                 <label className="block text-[10px] font-black uppercase text-muted-foreground tracking-widest pl-1 flex items-center gap-2">
+                  <Layers className="w-3 h-3" /> Estructura
+                </label>
+                <div className="grid grid-cols-3 gap-3">
+                  {(['campaign_budget', 'mixed_budget', 'adset_budget'] as const).map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setFormData({...formData, type: t})}
+                      className={`text-[10px] font-black uppercase py-3 rounded-xl border transition-all ${formData.type === t ? 'bg-accent text-white border-accent shadow-lg shadow-accent/20' : 'border-border text-muted-foreground hover:bg-secondary'}`}
+                    >
+                      {t === 'campaign_budget' ? 'Standard' : t === 'mixed_budget' ? 'Mixed' : 'Adset'}
+                    </button>
+                  ))}
+                </div>
               </div>
+
+              <div className="space-y-2">
+                <label className="block text-[10px] font-black uppercase text-muted-foreground tracking-widest pl-1 flex items-center gap-2">
+                   <Clock className="w-3 h-3" /> Frecuencia
+                </label>
+                <select
+                    value={formData.strategy_frequency}
+                    onChange={(e) => setFormData({...formData, strategy_frequency: e.target.value as STRATEGY_FREQUENCY})}
+                    className="w-full bg-secondary border border-border rounded-2xl px-5 py-4 font-bold text-foreground focus:ring-4 focus:ring-accent/20 transition-all outline-none appearance-none cursor-pointer"
+                >
+                    {Object.entries(FREQUENCY_LABELS).map(([key, label]) => (
+                        <option key={key} value={key}>{label}</option>
+                    ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Column 2 */}
+            <div className="space-y-6">
+               <div className="bg-secondary/30 p-6 rounded-[2rem] border border-border space-y-6">
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-black uppercase text-muted-foreground tracking-widest pl-1">Presupuesto Inicial</label>
+                    <div className="relative">
+                      <span className="absolute left-6 top-1/2 -translate-y-1/2 text-muted-foreground font-black">$</span>
+                      <input
+                        required
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={formData.initial_budget}
+                        onChange={(e) => setFormData({...formData, initial_budget: e.target.value})}
+                        className="w-full bg-card border border-border rounded-2xl pl-10 pr-6 py-5 font-black text-2xl text-foreground focus:ring-4 focus:ring-accent/20 transition-all outline-none tabular-nums"
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-black uppercase text-muted-foreground tracking-widest pl-1">Estrategia</label>
+                    <select
+                      value={formData.increment_strategy}
+                      onChange={(e) => setFormData({...formData, increment_strategy: e.target.value})}
+                      className="w-full bg-card border border-border rounded-2xl px-5 py-5 text-accent font-black text-lg focus:ring-4 focus:ring-accent/20 transition-all outline-none appearance-none cursor-pointer"
+                    >
+                      <option value="0.10">CONSERVADOR (10%)</option>
+                      <option value="0.20">STANDARD (20%)</option>
+                      <option value="0.30">AGRESIVO (30%)</option>
+                    </select>
+                  </div>
+               </div>
+
+               <div className="space-y-4">
+                 <div className="space-y-2">
+                    <label className="block text-[10px] font-black uppercase text-muted-foreground tracking-widest pl-1">Meta final (Opcional)</label>
+                    <div className="relative">
+                      <span className="absolute left-6 top-1/2 -translate-y-1/2 text-muted-foreground font-black">$</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={formData.target_budget}
+                        onChange={(e) => setFormData({...formData, target_budget: e.target.value})}
+                        className="w-full bg-secondary border border-border rounded-2xl pl-10 pr-6 py-4 font-bold text-foreground focus:ring-4 focus:ring-accent/20 transition-all outline-none tabular-nums"
+                        placeholder="Sin meta"
+                      />
+                    </div>
+                  </div>
+                  {formData.target_week && (
+                    <div className="p-4 bg-accent/10 rounded-2xl border border-accent/20 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
+                      <Info className="w-5 h-5 text-accent shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-xs font-black text-accent uppercase tracking-wider leading-none mb-1">Cálculo proyectado</p>
+                        <p className="text-sm font-bold text-foreground">
+                          Se alcanzará en la {(formData.strategy_frequency === 'daily' ? 'Día' : 'Semana')} {formData.target_week} ({new Date(formData.estimated_target_date).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })})
+                        </p>
+                      </div>
+                    </div>
+                  )}
+               </div>
             </div>
           </div>
 
-          {/* Auto-calculation preview */}
-          {calculation && (
-            <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-4 space-y-2">
-              <p className="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2">
-                <Clock className="w-3.5 h-3.5" /> Proyección Automática
-              </p>
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <span className="text-gray-500 text-xs">Períodos necesarios:</span>
-                  <p className="font-mono font-bold text-white">{calculation.periods} {frequencyLabel.toLowerCase()}s</p>
-                </div>
-                <div>
-                  <span className="text-gray-500 text-xs">Días totales:</span>
-                  <p className="font-mono font-bold text-white">{calculation.totalDays} días</p>
-                </div>
-                <div className="col-span-2">
-                  <span className="text-gray-500 text-xs">Fecha estimada de meta:</span>
-                  <p className="font-bold text-green-400 capitalize">{calculation.endDateStr}</p>
-                </div>
-              </div>
+          {/* Advanced Labels Field */}
+          {formData.type !== 'campaign_budget' && (
+            <div className="space-y-3 animate-in fade-in duration-500">
+               <label className="block text-[10px] font-black uppercase text-muted-foreground tracking-widest pl-1">
+                  {formData.type === 'mixed_budget' ? 'Plataformas' : 'Conjuntos de Anuncios'} (Uno por línea)
+               </label>
+               <textarea
+                 value={advancedLabels}
+                 onChange={(e) => setAdvancedLabels(e.target.value)}
+                 className="w-full bg-secondary border border-border rounded-2xl px-6 py-6 font-mono text-sm min-h-[120px] focus:ring-4 focus:ring-accent/20 transition-all outline-none"
+                 placeholder={`Facebook Ads\nGoogle Ads\nTikTok...`}
+               />
+               <p className="text-[10px] font-bold text-muted-foreground uppercase opacity-60">
+                 * El presupuesto inicial se dividirá equitativamente.
+               </p>
             </div>
           )}
 
-          {error && <p className="text-red-500 text-sm bg-red-500/10 p-3 rounded-lg border border-red-500/20">{error}</p>}
-
-          <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={onClose} className="px-4 py-2 hover:bg-white/5 rounded-lg text-sm text-gray-400 transition-colors">
-              Cancelar
-            </button>
-            <button 
-              type="submit" 
-              disabled={loading}
-              className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg font-bold transition-all disabled:opacity-50 shadow-lg shadow-blue-600/20"
-            >
-              {loading ? 'Guardando...' : 'Crear Campaña'}
-            </button>
-          </div>
         </form>
+
+        <div className="p-8 border-t border-border bg-secondary/30 flex justify-end gap-5">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-10 py-4 font-bold text-muted-foreground hover:bg-secondary rounded-2xl transition-all"
+            >
+              Cerrar
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={loading}
+              className="bg-primary text-primary-foreground hover:opacity-90 px-12 py-4 rounded-2xl font-black flex items-center gap-3 shadow-2xl shadow-primary/20 transition-all disabled:opacity-50"
+            >
+              {loading ? 'Procesando...' : <><Save className="w-6 h-6" /> Guardar</>}
+            </button>
+        </div>
       </div>
     </div>
   );

@@ -1,3 +1,7 @@
+export type CampaignType = 'campaign_budget' | 'adset_budget' | 'mixed_budget';
+
+export type STRATEGY_FREQUENCY = 'daily' | 'every_3_days' | 'weekly' | 'monthly';
+
 export interface Client {
   id: string;
   name: string;
@@ -9,10 +13,10 @@ export interface Campaign {
   client_id: string;
   name: string;
   status: 'active' | 'paused' | 'completed' | 'deleted';
-  type: 'campaign_budget' | 'adset_budget' | 'mixed_budget';
+  type: CampaignType;
   current_week: number;
   increment_strategy: number;
-  strategy_frequency: 'daily' | 'every_3_days' | 'weekly' | 'monthly';
+  strategy_frequency: STRATEGY_FREQUENCY;
   start_date?: string;
   estimated_target_date?: string;
   target_budget?: number;
@@ -34,7 +38,7 @@ export interface WeeklyRecord {
 }
 
 // Helper: frequency labels
-export const FREQUENCY_LABELS: Record<string, string> = {
+export const FREQUENCY_LABELS: Record<STRATEGY_FREQUENCY, string> = {
   daily: 'Diario',
   every_3_days: 'Cada 3 Días',
   weekly: 'Semanal',
@@ -42,7 +46,7 @@ export const FREQUENCY_LABELS: Record<string, string> = {
 };
 
 // Helper: frequency to days multiplier
-export const FREQUENCY_DAYS: Record<string, number> = {
+export const FREQUENCY_DAYS: Record<STRATEGY_FREQUENCY, number> = {
   daily: 1,
   every_3_days: 3,
   weekly: 7,
@@ -50,7 +54,7 @@ export const FREQUENCY_DAYS: Record<string, number> = {
 };
 
 // Helper: period prefix for display
-export const FREQUENCY_PREFIX: Record<string, string> = {
+export const FREQUENCY_PREFIX: Record<STRATEGY_FREQUENCY, string> = {
   daily: 'D',
   every_3_days: 'P',
   weekly: 'S',

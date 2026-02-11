@@ -1,80 +1,85 @@
-'use client';
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { X, Briefcase } from 'lucide-react';
+import { X, Save, Building2 } from 'lucide-react';
 
-interface Props {
+interface NewClientModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
 }
 
-export function NewClientModal({ isOpen, onClose, onSuccess }: Props) {
+export function NewClientModal({ isOpen, onClose, onSuccess }: NewClientModalProps) {
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  if (!isOpen) return null;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
-    setError('');
+    if (!name.trim()) return;
 
+    setLoading(true);
     try {
-      const { error: err } = await supabase
-        .from('clients')
-        .insert({ name });
+      const { error } = await supabase.from('clients').insert([{ name }]);
+      if (error) throw error;
       
-      if (err) throw err;
-      
-      setName('');
       onSuccess();
       onClose();
+      setName('');
     } catch (err: any) {
-      setError(err.message || 'Error al crear cliente');
+      alert('Error: ' + err.message);
     } finally {
       setLoading(false);
     }
   }
 
+  if (!isOpen) return null;
+
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-[#111] border border-white/10 rounded-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-        <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/5">
-          <h3 className="font-bold flex items-center gap-2">
-            <Briefcase className="w-5 h-5 text-blue-500" /> Nuevo Cliente
-          </h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
-            <X className="w-5 h-5" />
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-xl z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300">
+      <div className="bg-card border border-border rounded-[2.5rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-300">
+        <div className="flex justify-between items-center p-8 border-b border-border bg-secondary/20">
+          <div>
+            <h2 className="text-2xl font-black flex items-center gap-3 text-foreground tracking-tight">
+              <div className="bg-accent/20 p-2 rounded-xl">
+                <Building2 className="w-6 h-6 text-accent" />
+              </div>
+              Nuevo Cliente
+            </h2>
+          </div>
+          <button 
+            onClick={onClose}
+            className="p-2 hover:bg-secondary rounded-full transition-colors text-muted-foreground"
+          >
+            <X className="w-6 h-6" />
           </button>
         </div>
-        
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div>
-            <label className="block text-xs font-bold uppercase text-gray-500 mb-2">Nombre de la Empresa</label>
-            <input 
-              type="text" 
+
+        <form onSubmit={handleSubmit} className="p-8 space-y-8">
+          <div className="space-y-3">
+            <label className="block text-[10px] font-black uppercase text-muted-foreground tracking-widest pl-1">Nombre de la Empresa</label>
+            <input
+              type="text"
               value={name}
-              onChange={e => setName(e.target.value)}
-              className="w-full bg-black border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
-              placeholder="Ej: Nike, Adidas, etc."
-              required
+              onChange={(e) => setName(e.target.value)}
+              className="w-full bg-secondary border border-border rounded-2xl px-6 py-4 text-lg font-bold text-foreground focus:ring-4 focus:ring-accent/20 transition-all outline-none"
+              placeholder="Ej. Acme Corp"
+              autoFocus
             />
           </div>
 
-          {error && <p className="text-red-500 text-sm">{error}</p>}
-
-          <div className="flex justify-end gap-3 pt-4">
-            <button type="button" onClick={onClose} className="px-4 py-2 hover:bg-white/5 rounded-lg text-sm text-gray-400 transition-colors">
+          <div className="flex gap-4 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-4 font-bold text-muted-foreground hover:bg-secondary rounded-2xl transition-all"
+            >
               Cancelar
             </button>
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               disabled={loading}
-              className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg font-bold transition-all disabled:opacity-50"
+              className="flex-[2] bg-primary text-primary-foreground hover:opacity-90 py-4 rounded-2xl font-black flex items-center justify-center gap-3 transition-all disabled:opacity-50 shadow-xl shadow-primary/10"
             >
-              {loading ? 'Creando...' : 'Crear Cliente'}
+              {loading ? 'Guardando...' : <><Save className="w-5 h-5" /> Crear Cliente</>}
             </button>
           </div>
         </form>

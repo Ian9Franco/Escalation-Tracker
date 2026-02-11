@@ -1,87 +1,193 @@
 @import "tailwindcss";
 
-:root {
-  --background: #0a0a0a;
-  --foreground: #ededed;
-  --accent: #2563eb;
-  --card-bg: rgba(23, 23, 23, 0.95);
-  --border: rgba(255, 255, 255, 0.1);
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-orange-vibrant: #ff5200;
+  --color-blue-vibrant: #007aff;
+  --color-success: #22c55e;
+  --color-warning: #facc15;
+  --color-destructive: #ef4444;
+
+  --radius-lg: 1.25rem;
+  --radius-md: 0.75rem;
+  --radius-sm: 0.5rem;
 }
 
+:root {
+  /* Premium Light - Soft Grays & Whites */
+  --background: #f8f9fa;
+  --foreground: #09090b;
+  
+  --card: #ffffff;
+  --card-foreground: #09090b;
+  
+  --primary: #09090b;
+  --primary-foreground: #ffffff;
+  
+  --secondary: #f1f5f9;
+  --secondary-foreground: #09090b;
+  
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  
+  --accent: #f97316;
+  --accent-foreground: #ffffff;
+
+  --border: #e2e8f0;
+  --input: #ffffff;
+  --ring: #09090b;
+}
+
+.dark {
+  /* Premium Dark - Deep Zinc & Blacks */
+  --background: #000000;
+  --foreground: #ffffff;
+  
+  --card: #141414; /* Deep gray for cards */
+  --card-foreground: #ffffff;
+  
+  --primary: #ffffff;
+  --primary-foreground: #000000;
+  
+  --secondary: #1c1c1e;
+  --secondary-foreground: #ffffff;
+  
+  --muted: #1c1c1e;
+  --muted-foreground: #8e8e93;
+  
+  --accent: #ff4500; /* Vibrant Orange */
+  --accent-foreground: #ffffff;
+  
+  --border: #2c2c2e;
+  --input: #1c1c1e;
+  --ring: #ffffff;
+}
+
+/* Base Styles */
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+              color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.glass {
-  background: var(--card-bg);
-  backdrop-filter: blur(12px);
+/* Semantic Component Shorthands - Manual CSS to avoid @apply issues in build if any */
+.card-widget {
+  background-color: var(--card);
+  color: var(--card-foreground);
   border: 1px solid var(--border);
-  border-radius: 1rem;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 6px -1px var(--border);
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.gradient-text {
-  background: linear-gradient(to right, #60a5fa, #2563eb);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+.card-widget:hover {
+  border-color: rgba(255, 69, 0, 0.6);
+  transform: scale(1.01);
+  box-shadow: 0 10px 25px -5px rgba(255, 69, 0, 0.15), 0 8px 10px -6px rgba(255, 69, 0, 0.15);
 }
 
-.input {
-  width: 100%;
-  background: #000;
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  padding: 0.75rem;
-  color: white;
-  transition: all 0.2s;
+.dark .card-widget {
+  border-color: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.5);
 }
 
-.input:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+.dark .card-widget:hover {
+  border-color: rgba(255, 69, 0, 0.4);
+  box-shadow: 0 20px 25px -5px rgba(255, 69, 0, 0.25), 0 0 15px -3px rgba(255, 69, 0, 0.1);
 }
 
-.label {
-  display: block;
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: #9ca3af;
-  margin-bottom: 0.5rem;
+.shadow-orange-glow {
+  box-shadow: 0 0 20px -5px var(--accent);
 }
 
-.dropdown-menu {
-  display: flex;
-  flex-direction: column;
-  background-color: #1a1a1a;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.8);
+.btn-premium {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  padding: 0.625rem 1.25rem;
   border-radius: 0.75rem;
+  font-weight: 700;
+  transition: transform 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-premium:active {
+  transform: scale(0.95);
+}
+
+.input-widget {
+  background-color: var(--input);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 0.625rem 1rem;
+  outline: none;
+  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.input-widget:focus {
+  box-shadow: 0 0 0 2px rgba(var(--ring), 0.5);
+}
+
+.badge-orange {
+  background-color: rgba(255, 69, 0, 0.1);
+  color: #ff5200;
+  border: 1px solid rgba(255, 69, 0, 0.2);
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Custom Progress Bar Style */
+.progress-container {
+  height: 0.875rem;
+  background-color: var(--secondary);
+  border-radius: 9999px;
   overflow: hidden;
-  min-width: 14rem;
+  border: 1px solid rgba(var(--border), 0.5);
 }
 
-.dropdown-item {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  width: 100%;
-  text-align: left;
-  padding: 0.875rem 1rem;
-  transition: all 0.2s;
-  color: #e5e7eb;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  font-size: 0.875rem;
+.progress-fill {
+  height: 100%;
+  transition: all 1000ms cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(90deg, #ff4500, #ff7a00);
 }
 
-.dropdown-item:hover {
-  background-color: rgba(37, 99, 235, 0.1);
-  color: #60a5fa;
+.progress-fill.finished {
+  background: linear-gradient(90deg, #22c55e, #4ade80);
+}
+
+/* Utility Animations */
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
+}
+
+.pulsing {
+  animation: pulse-subtle 2s infinite ease-in-out;
 }
