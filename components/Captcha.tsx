@@ -16,8 +16,11 @@ declare global {
 
 export function Captcha({ onVerify, siteKey }: CaptchaProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const widgetIdRef = useRef<string | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
+
     // Prevent multiple script loads
     if (!document.querySelector('script[src*="turnstile"]')) {
       const script = document.createElement('script');
@@ -28,14 +31,22 @@ export function Captcha({ onVerify, siteKey }: CaptchaProps) {
     }
 
     const renderCaptcha = () => {
-      if (window.turnstile && containerRef.current) {
-        window.turnstile.render(containerRef.current, {
-          sitekey: siteKey,
-          callback: (token: string) => {
-            onVerify(token);
-          },
-          theme: 'dark',
-        });
+      if (window.turnstile && containerRef.current && isMounted && !widgetIdRef.current) {
+        // Clear container just in case
+        containerRef.current.innerHTML = '';
+        
+        try {
+          const id = window.turnstile.render(containerRef.current, {
+            sitekey: siteKey,
+            callback: (token: string) => {
+              onVerify(token);
+            },
+            theme: 'dark',
+          });
+          widgetIdRef.current = id;
+        } catch (e) {
+          console.error('Turnstile render error:', e);
+        }
       }
     };
 
@@ -46,10 +57,14 @@ export function Captcha({ onVerify, siteKey }: CaptchaProps) {
     }
 
     return () => {
-      // Cleanup
-      if (window.turnstile && containerRef.current) {
-        // Turnstile doesn't always have a straightforward 'remove' for custom containers via ID
-        // but we can at least clear the innerHTML if needed.
+      isMounted = false;
+      if (window.turnstile && widgetIdRef.current) {
+        try {
+          window.turnstile.remove(widgetIdRef.current);
+          widgetIdRef.current = null;
+        } catch (e) {
+          // Ignore removal errors on unmount
+        }
       }
     };
   }, [onVerify, siteKey]);

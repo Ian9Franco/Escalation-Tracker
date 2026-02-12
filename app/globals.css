@@ -102,80 +102,157 @@ body {
   color: var(--card-foreground);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  box-shadow: 0 4px 6px -1px var(--border);
-  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transition: all 500ms cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
 }
 
 .card-widget:hover {
-  border-color: rgba(255, 69, 0, 0.6);
-  transform: scale(1.01);
-  box-shadow:
-    0 10px 25px -5px rgba(255, 69, 0, 0.15),
-    0 8px 10px -6px rgba(255, 69, 0, 0.15);
+  transform: translateY(-4px) scale(1.01);
+  border-color: var(--beam-color, var(--border));
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.3), 0 0 20px -2px var(--shadow-color, var(--accent));
 }
 
-.dark .card-widget {
-  border-color: rgba(255, 255, 255, 0.05);
-  box-shadow:
-    0 10px 15px -3px rgba(0, 0, 0, 0.5),
-    0 4px 6px -2px rgba(0, 0, 0, 0.5);
+.card-widget:hover h3 {
+  color: var(--beam-color, var(--accent)) !important;
+}
+
+.card-widget:hover .hover-status-color {
+  color: var(--beam-color, var(--accent)) !important;
 }
 
 .dark .card-widget:hover {
-  border-color: rgba(255, 69, 0, 0.4);
-  box-shadow:
-    0 20px 25px -5px rgba(255, 69, 0, 0.25),
-    0 0 15px -3px rgba(255, 69, 0, 0.1);
+  border-color: var(--beam-color, var(--border));
 }
 
-.shadow-orange-glow {
-  box-shadow: 0 0 20px -5px var(--accent);
-}
-
-/* Premium Animations */
-@keyframes breathe-glow {
-  0%, 100% {
-    box-shadow: 0 10px 40px -10px rgba(255, 69, 0, 0.3), 0 0 20px -5px rgba(255, 69, 0, 0.1);
-  }
-  50% {
-    box-shadow: 0 15px 50px -5px rgba(255, 69, 0, 0.5), 0 0 30px -2px rgba(255, 69, 0, 0.2);
-  }
-}
-
-@keyframes border-beam-anim {
-  0% { offset-distance: 0%; }
-  100% { offset-distance: 100%; }
-}
-
-.card-widget:hover {
-  animation: breathe-glow 4s ease-in-out infinite;
+.no-glow, 
+.no-glow:hover {
+  animation: none !important;
+  box-shadow: none !important;
 }
 
 /* Border Beam Implementation */
 .border-beam-container {
   position: relative;
   z-index: 1;
+  --beam-color: var(--border);
+  --shadow-color: var(--accent);
 }
 
 .border-beam-container::after {
   content: "";
   position: absolute;
   inset: 0;
-  border-radius: inherit;
-  padding: 1px; /* Width of the beam */
-  background: conic-gradient(from var(--beam-angle, 0deg), transparent 70%, var(--accent) 90%, transparent 100%);
+  border-radius: inherit; /* Ensure radius inheritance for beams */
+  padding: 1.5px; /* Width of the beam */
+  background: conic-gradient(from var(--beam-angle, 0deg), transparent 60%, var(--beam-color) 85%, transparent 100%);
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
-  opacity: 0;
-  transition: opacity 0.5s ease;
+  opacity: 0.15; /* Subtle idle visibility */
+  transition: all 0.5s ease;
   pointer-events: none;
+  animation: beam-rotate 12s linear infinite;
 }
+
+/* Scroll Animation Utilities */
+.reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+  will-change: transform, opacity;
+}
+
+.reveal.active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.reveal-delay-1 { transition-delay: 150ms; }
+.reveal-delay-2 { transition-delay: 300ms; }
+.reveal-delay-3 { transition-delay: 450ms; }
 
 .border-beam-container:hover::after {
   opacity: 1;
+  background: conic-gradient(from var(--beam-angle, 0deg), transparent 50%, var(--beam-color) 80%, transparent 100%);
   animation: beam-rotate 4s linear infinite;
+}
+
+/* Status Overrides for Beams and Shrouds */
+.beam-active {
+  --beam-color: var(--accent);
+  --shadow-color: var(--accent);
+}
+
+.beam-paused {
+  --beam-color: #facc15; /* warning yellow */
+  --shadow-color: #facc15;
+}
+
+.beam-finished {
+  --beam-color: #22c55e; /* success green */
+  --shadow-color: #22c55e;
+}
+
+.beam-trash {
+  --beam-color: #ef4444; /* destructive red */
+  --shadow-color: #ef4444;
+}
+
+/* Premium Animations */
+.no-glow {
+  animation: none !important;
+  box-shadow: none !important;
+}
+
+/* Projection Table Design System */
+.projection-row-group {
+  transition: all 0.3s ease;
+}
+
+.projection-row-header {
+  background: rgba(var(--secondary), 0.1);
+  font-weight: 800;
+  border-left: 4px solid var(--beam-color, var(--border));
+}
+
+.projection-row-sub {
+  background: transparent;
+  opacity: 0.8;
+  font-size: 0.85rem;
+}
+
+.projection-sub-indent {
+  padding-left: 4.5rem !important; /* Increased indentation */
+  position: relative;
+}
+
+.projection-sub-indent::before {
+  content: "";
+  position: absolute;
+  left: 3rem; /* Adjusted for new indentation */
+  top: 0;
+  bottom: 0;
+  width: 1.5px;
+  background: var(--border);
+  opacity: 0.3;
+}
+
+.projection-current-week {
+  background: var(--beam-color, var(--accent));
+  color: white;
+  font-weight: 900;
+  position: relative;
+  z-index: 10;
+  box-shadow: 0 0 20px rgba(var(--beam-color, var(--accent)), 0.2);
+}
+
+.projection-current-week-column {
+  background: rgba(var(--beam-color, var(--accent)), 0.03);
+  border-left: 1px dashed var(--beam-color, var(--accent));
+  border-right: 1px dashed var(--beam-color, var(--accent));
 }
 
 @property --beam-angle {
@@ -281,4 +358,127 @@ body {
 * {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 69, 0, 0.2) transparent;
+}
+
+/* Print Optimization for PDF Export */
+@media print {
+  @page {
+    size: landscape;
+    margin: 0.8cm;
+  }
+
+  /* Reset entrance animations */
+  .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  /* Hide everything in main except the export container */
+  body {
+    background: white !important;
+    color: black !important;
+    overflow: visible !important;
+  }
+
+  main > *:not(.export-container) {
+    display: none !important;
+  }
+
+  nav,
+  footer,
+  .no-print,
+  .export-container button,
+  .export-container .shadow-orange-glow {
+    display: none !important;
+  }
+
+  /* Kill the beam gradient — display:none doesn't work on pseudo-elements */
+  .border-beam-container::after {
+    content: none !important;
+  }
+
+  /* Hide the section header (title + badge), keep only the table */
+  .export-container > div:first-child {
+    display: none !important;
+  }
+
+  /* Expand the export container fully */
+  .export-container {
+    position: relative !important;
+    width: 100% !important;
+    max-height: none !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 1px solid #ddd !important;
+    border-radius: 0 !important;
+    background: white !important;
+    box-shadow: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  /* Critical: remove scroll constraints from inner wrapper */
+  .export-container > div {
+    max-height: none !important;
+    overflow: visible !important;
+    height: auto !important;
+    cursor: default !important;
+  }
+
+  .export-container table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    color: black !important;
+    font-size: 10px !important;
+  }
+
+  .export-container th {
+    border: 1px solid #ccc !important;
+    color: black !important;
+    padding: 8px 6px !important;
+    background: #f5f5f5 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    font-size: 9px !important;
+  }
+
+  .export-container td {
+    border: 1px solid #e0e0e0 !important;
+    color: black !important;
+    padding: 8px 6px !important;
+    background: transparent !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .projection-row-header {
+    background-color: #f0f0f0 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .projection-current-week-column {
+    background-color: rgba(255, 69, 0, 0.08) !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Status indicators preserved as left border */
+  .beam-active {
+    border-left: 5px solid #ff4500 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .beam-finished {
+    border-left: 5px solid #22c55e !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .beam-paused {
+    border-left: 5px solid #facc15 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 }

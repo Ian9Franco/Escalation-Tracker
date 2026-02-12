@@ -1,5 +1,6 @@
 'use client';
 
+import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { 
   TrendingUp, Activity, CheckCircle2, ChevronRight, 
@@ -9,10 +10,30 @@ import {
 export const dynamic = 'force-dynamic';
 
 export default function Home() {
+  useEffect(() => {
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('active');
+        }
+      });
+    }, observerOptions);
+
+    const revealElements = document.querySelectorAll('.reveal');
+    revealElements.forEach(el => observer.observe(el));
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-accent selection:text-white">
       {/* Premium Navbar */}
-      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-background/80 backdrop-blur-xl">
+      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-background/80 backdrop-blur-xl reveal">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-4 group cursor-pointer">
             <div className="relative">
@@ -42,28 +63,30 @@ export default function Home() {
 
       {/* Intro Section */}
       <section className="pt-40 pb-20 px-6">
-        <div className="max-w-5xl mx-auto text-center space-y-10">
+        <div className="max-w-5xl mx-auto text-center space-y-10 reveal">
           <div className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-accent/10 border border-accent/20 text-accent text-xs font-black uppercase tracking-widest">
             <Activity className="w-4 h-4" /> Gestión Interna de Escalamiento
           </div>
           
-          <h1 className="text-6xl md:text-8xl font-black tracking-tighter leading-[0.9] uppercase italic">
+          <h1 className="text-6xl md:text-8xl font-black tracking-tighter leading-[0.9] uppercase italic reveal reveal-delay-1">
             F-Tracker <br />
             <span className="text-accent underline decoration-accent/20 decoration-8 underline-offset-8">Inteligente</span>
           </h1>
 
-          <p className="text-xl md:text-2xl text-muted-foreground font-medium max-w-3xl mx-auto">
+          <p className="text-xl md:text-2xl text-muted-foreground font-medium max-w-3xl mx-auto reveal reveal-delay-2">
             Herramienta diseñada para el seguimiento de aumentos progresivos en pauta. 
             Menos hojas de cálculo, más visibilidad sobre las proyecciones semanales.
           </p>
 
-          <div className="pt-10 flex flex-col md:flex-row items-center justify-center gap-6">
-             <Link 
-              href="/dashboard" 
-              className="bg-accent text-white px-12 py-6 rounded-[2rem] font-black text-xl shadow-[0_20px_50px_-10px_rgba(255,69,0,0.5)] hover:scale-110 active:scale-95 transition-all uppercase italic flex items-center gap-4"
-            >
-              Abrir Tracker <ChevronRight className="w-6 h-6 border-2 border-white/20 rounded-full" />
-            </Link>
+          <div className="pt-10 flex flex-col md:flex-row items-center justify-center gap-6 reveal reveal-delay-3 px-4">
+            <div className="relative group border-beam-container beam-active rounded-[2rem] overflow-hidden">
+              <Link 
+                href="/dashboard" 
+                className="relative z-10 bg-accent text-white px-12 py-6 rounded-[2rem] font-black text-xl shadow-[0_20px_50px_-10px_rgba(255,69,0,0.5)] hover:scale-110 active:scale-95 transition-all uppercase italic flex items-center gap-4"
+              >
+                Abrir F-Tracker <ChevronRight className="w-6 h-6 border-2 border-white/20 rounded-full" />
+              </Link>
+            </div>
           </div>
         </div>
       </section>
@@ -71,7 +94,7 @@ export default function Home() {
       {/* Purpose Section */}
       <section className="py-32 px-6 border-y border-white/5 bg-accent/[0.02]">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-20 items-center">
-           <div className="space-y-8">
+           <div className="space-y-8 reveal">
               <h2 className="text-4xl md:text-6xl font-black tracking-tighter uppercase italic leading-none">
                 ¿Por qué lo hice?
               </h2>
@@ -86,7 +109,7 @@ export default function Home() {
                    { icon: BarChart3, text: "Cálculo automático de presupuestos proyectados." },
                    { icon: Users, text: "Organizado por cliente y tipo de estructura." }
                  ].map((item, i) => (
-                   <li key={i} className="flex items-center gap-4 text-foreground font-bold">
+                   <li key={i} className="flex items-center gap-4 text-foreground font-bold reveal reveal-delay-1">
                      <div className="bg-accent/10 p-2 rounded-lg"><item.icon className="w-5 h-5 text-accent" /></div>
                      {item.text}
                    </li>
@@ -94,20 +117,20 @@ export default function Home() {
               </ul>
            </div>
            
-           <div className="relative group">
+           <div className="relative group border-beam-container reveal rounded-[2.5rem] beam-active">
               <div className="absolute -inset-4 bg-accent/20 rounded-[3rem] blur-3xl opacity-30 group-hover:opacity-100 transition duration-1000"></div>
-              <div className="relative p-8 bg-card border border-border rounded-[2.5rem] shadow-2xl space-y-6">
-                 <div className="flex items-center justify-between mb-8">
+              <div className="relative p-8 bg-card border border-border rounded-[2.5rem] shadow-2xl space-y-6 overflow-hidden">
+                 <div className="flex items-center justify-between mb-8 relative z-10">
                     <div className="space-y-1">
                        <div className="badge-orange">Estrategia ACTIVA</div>
                        <div className="text-2xl font-black italic uppercase">Escalado 20%</div>
                     </div>
-                    <div className="text-4xl font-black text-accent">S4</div>
+                    <div className="text-4xl font-black text-accent">E4</div>
                  </div>
-                 <div className="progress-container">
+                 <div className="progress-container relative z-10">
                     <div className="progress-fill shadow-[0_0_20px_rgba(255,69,0,0.5)]" style={{ width: '70%' }}></div>
                  </div>
-                 <div className="flex justify-between font-black uppercase italic text-[10px] text-muted-foreground">
+                 <div className="flex justify-between font-black uppercase italic text-[10px] text-muted-foreground relative z-10">
                     <span>ETAPA ACTUAL</span>
                     <span>OBJETIVO</span>
                  </div>
@@ -119,7 +142,7 @@ export default function Home() {
       {/* Logic */}
       <section className="py-32 px-6">
          <div className="max-w-7xl mx-auto space-y-20">
-            <div className="text-center space-y-4">
+            <div className="text-center space-y-4 reveal">
                <h2 className="text-4xl md:text-6xl font-black tracking-tighter uppercase italic leading-none">Funcionamiento</h2>
                <p className="text-muted-foreground uppercase font-black text-xs tracking-[0.3em]">Lógica de uso interno</p>
             </div>
@@ -142,7 +165,7 @@ export default function Home() {
                    icon: Activity
                  }
                ].map((step, i) => (
-                 <div key={i} className="card-widget p-10 space-y-6 hover:shadow-orange-glow/10 border-transparent hover:border-accent/30 group">
+                 <div key={i} className={`card-widget p-10 space-y-6 hover:shadow-orange-glow/10 border-transparent border-beam-container group reveal reveal-delay-${i+1} rounded-[2rem]`}>
                     <div className="w-16 h-16 bg-accent/10 rounded-2xl flex items-center justify-center border border-accent/20 group-hover:scale-110 transition-transform">
                       <step.icon className="w-8 h-8 text-accent" />
                     </div>
@@ -155,7 +178,7 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="py-20 border-t border-white/5 px-6">
+      <footer className="py-20 border-t border-white/5 px-6 reveal">
          <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-10">
             <a 
               href="https://www.fangerdesign.com.ar/contacto/" 

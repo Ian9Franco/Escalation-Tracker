@@ -1,0 +1,18 @@
+'use client';
+
+import { useState, useEffect, useMemo } from 'react';
+import { supabase } from '@/lib/supabase';
+import { 
+  Plus, Settings2, TrendingUp, Activity, Target, 
+  ChevronRight, ArrowUpRight, Clock, Users, 
+  Trash2, Archive, Play, Pause, Save, X, 
+  Info, AlertTriangle, CheckCircle2, MoreVertical,
+  ChevronDown, Filter, Search, BarChart3,
+  Lightbulb, Calculator, History, Layers,
+  AlertCircle, InfoIcon, LayoutGrid, List
+} from 'lucide-react';
+import { NewCampaignModal } from '@/components/NewCampaignModal';
+import { NewClientModal } from '@/components/NewClientModal';
+import Link from 'next/link';
+
+// ... (Rest of the file would be too big, I'll use replace_file_content for the whole sidebar block instead)
