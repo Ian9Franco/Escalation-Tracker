@@ -1,5 +1,7 @@
 export type CampaignType = 'campaign_budget' | 'adset_budget' | 'mixed_budget';
 
+export type Platform = 'meta' | 'google';
+
 export type STRATEGY_FREQUENCY = 'daily' | 'every_3_days' | 'weekly' | 'monthly';
 
 export interface Client {
@@ -14,6 +16,7 @@ export interface Campaign {
   name: string;
   status: 'active' | 'paused' | 'completed' | 'deleted' | 'archived';
   type: CampaignType;
+  platform: Platform;
   currency: string;
   initial_budget: number;
   current_week: number;
@@ -62,6 +65,12 @@ export const FREQUENCY_PREFIX: Record<STRATEGY_FREQUENCY, string> = {
   every_3_days: 'E',
   weekly: 'E',
   monthly: 'E',
+};
+
+// Helper: platform labels
+export const PLATFORM_LABELS: Record<Platform, string> = {
+  meta: 'Meta Ads',
+  google: 'Google Ads',
 };
 
 export interface StrategyAdjustment {

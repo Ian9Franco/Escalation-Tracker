@@ -9,17 +9,17 @@ import { NewClientModal } from '@/components/NewClientModal';
 import { NewCampaignModal } from '@/components/NewCampaignModal';
 
 // Dashboard components
-import { DashboardNavbar } from './_components/DashboardNavbar';
-import { DashboardHeader } from './_components/DashboardHeader';
-import { CampaignCard } from './_components/CampaignCard';
-import { ProjectionTable } from './_components/ProjectionTable';
-import { CampaignSidebar } from './_components/CampaignSidebar';
-import { OverrideModal } from './_components/OverrideModal';
-import { ConfirmationModal } from './_components/ConfirmationModal';
+import { DashboardNavbar } from '../_components/DashboardNavbar';
+import { DashboardHeader } from '../_components/DashboardHeader';
+import { CampaignCard } from '../_components/CampaignCard';
+import { ProjectionTable } from '../_components/ProjectionTable';
+import { CampaignSidebar } from '../_components/CampaignSidebar';
+import { OverrideModal } from '../_components/OverrideModal';
+import { ConfirmationModal } from '../_components/ConfirmationModal';
 
 export const dynamic = 'force-dynamic';
 
-export default function Dashboard() {
+export default function GoogleDashboard() {
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -51,6 +51,8 @@ export default function Dashboard() {
   const [showStrategyInfo, setShowStrategyInfo] = useState<Record<string, boolean>>({});
   const [overrideModal, setOverrideModal] = useState<{ campaignId: string; campName: string } | null>(null);
   const [overridePercent, setOverridePercent] = useState('');
+
+  const PLATFORM: Platform = 'google';
 
   // ─── Effects ───────────────────────────────────────────────────
 
@@ -343,7 +345,7 @@ export default function Dashboard() {
   }
 
   async function handleBulkAdvance() {
-    const activeCampaigns = campaigns.filter(c => c.status === 'active');
+    const activeCampaigns = campaigns.filter(c => c.status === 'active' && c.platform === PLATFORM);
     if (activeCampaigns.length === 0) return;
 
     const strategies = new Set(activeCampaigns.map(c => Number(c.increment_strategy)));
@@ -417,7 +419,7 @@ export default function Dashboard() {
     );
   }
 
-  const currentWeek = campaigns.find(c => c.status === 'active')?.current_week || 1;
+  const currentWeek = campaigns.find(c => c.status === 'active' && c.platform === PLATFORM)?.current_week || 1;
 
   // ─── Render ────────────────────────────────────────────────────
 
@@ -451,20 +453,20 @@ export default function Dashboard() {
         currentWeek={currentWeek}
         handleBulkAdvance={handleBulkAdvance}
         loading={loading}
-        campaigns={campaigns.filter(c => c.platform === 'meta')} // Pass filtered campaigns for stats? Or all? Usually stats are per view.
+        campaigns={campaigns.filter(c => c.platform === PLATFORM)}
         setIsCampaignModalOpen={setIsCampaignModalOpen}
         supabaseConnected={!!supabase}
-        platform="meta"
+        platform={PLATFORM}
       />
 
       {/* Grid of Campaign Cards */}
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-20 reveal reveal-delay-1">
-        {loading && campaigns.filter(c => c.status === 'active' && c.platform === 'meta').length === 0 ? (
-             // Show empty state or loading skeletons
-             loading ? Array(3).fill(0).map((_, i) => <div key={i} className="card-widget p-8 h-64 animate-pulse bg-secondary/50 border-transparent" />) : 
-             <div className="col-span-full text-center py-20 opacity-50 italic">No hay campañas de Meta activas</div>
+        {loading && campaigns.filter(c => c.status === 'active' && c.platform === PLATFORM).length === 0 ? (
+             Array(3).fill(0).map((_, i) => <div key={i} className="card-widget p-8 h-64 animate-pulse bg-secondary/50 border-transparent" />)
+        ) : campaigns.filter(c => c.status === 'active' && c.platform === PLATFORM).length === 0 ? (
+          <div className="col-span-full text-center py-20 opacity-50 italic">No hay campañas de Google Ads activas</div>
         ) : (
-          campaigns.filter(c => c.status === 'active' && c.platform === 'meta').map((campaign) => (
+          campaigns.filter(c => c.status === 'active' && c.platform === PLATFORM).map((campaign) => (
             <CampaignCard
               key={campaign.id}
               campaign={campaign}
@@ -488,7 +490,7 @@ export default function Dashboard() {
       </section>
 
       <ProjectionTable
-        campaigns={campaigns.filter(c => c.platform === 'meta')}
+        campaigns={campaigns.filter(c => c.platform === PLATFORM)}
         records={records}
         currentWeek={currentWeek}
       />
@@ -513,10 +515,9 @@ export default function Dashboard() {
         onSuccess={() => selectedClient && fetchCampaignData(selectedClient)}
         clients={clients}
         initialClientId={selectedClient}
-        platform="meta"
+        platform={PLATFORM}
       />
 
-      {/* Footer */}
       <footer className="py-20 border-t border-border mt-20 opacity-60 hover:opacity-100 transition-opacity">
          <div className="flex flex-col md:flex-row justify-between items-center gap-10">
             <a 
@@ -559,7 +560,6 @@ export default function Dashboard() {
         setShowConfirmation={setShowConfirmation}
       />
 
-      {/* Sidebar Trigger Button */}
       <button 
         onClick={() => setIsSidebarOpen(true)}
         className={`fixed right-0 top-1/2 -translate-y-1/2 bg-card border border-border border-r-0 pl-4 pr-3 py-8 rounded-l-3xl shadow-[-10px_0_30px_rgba(0,0,0,0.2)] z-[90] transition-all duration-500 hover:pl-6 group flex flex-col items-center gap-4 ${isSidebarOpen ? 'translate-x-full' : 'translate-x-0'}`}

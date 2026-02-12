@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Client, CampaignType, STRATEGY_FREQUENCY, FREQUENCY_LABELS } from '@/lib/types';
+import { Client, CampaignType, Platform, STRATEGY_FREQUENCY, FREQUENCY_LABELS } from '@/lib/types';
 import { X, Target, Save, Briefcase, Calendar, Info, Layers, Clock, Plus, Trash2 } from 'lucide-react';
 
 interface NewCampaignModalProps {
@@ -9,9 +9,10 @@ interface NewCampaignModalProps {
   onSuccess: () => void;
   clients: Client[];
   initialClientId: string | null;
+  platform: Platform;
 }
 
-export function NewCampaignModal({ isOpen, onClose, onSuccess, clients, initialClientId }: NewCampaignModalProps) {
+export function NewCampaignModal({ isOpen, onClose, onSuccess, clients, initialClientId, platform }: NewCampaignModalProps) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     client_id: initialClientId || '',
@@ -75,6 +76,7 @@ export function NewCampaignModal({ isOpen, onClose, onSuccess, clients, initialC
           client_id: formData.client_id,
           name: formData.name,
           type: formData.type,
+          platform: platform,
           currency: formData.currency,
           current_week: formData.current_week,
           increment_strategy: formData.increment_strategy,
@@ -140,7 +142,7 @@ export function NewCampaignModal({ isOpen, onClose, onSuccess, clients, initialC
             </div>
             <div>
               <h2 className="text-3xl font-black text-foreground tracking-tight">Nueva Campaña</h2>
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Configura la estrategia de escalado</p>
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{platform === 'meta' ? 'Meta Ads' : 'Google Ads'} · Configura la estrategia de escalado</p>
             </div>
           </div>
           <button 
@@ -187,15 +189,15 @@ export function NewCampaignModal({ isOpen, onClose, onSuccess, clients, initialC
                  <label className="block text-[10px] font-black uppercase text-muted-foreground tracking-widest pl-1 flex items-center gap-2">
                   <Layers className="w-3 h-3" /> Estructura
                 </label>
-                <div className="grid grid-cols-3 gap-3">
-                  {(['campaign_budget', 'mixed_budget', 'adset_budget'] as const).map((t) => (
+                <div className="grid grid-cols-2 gap-3">
+                  {(['campaign_budget', 'adset_budget'] as const).map((t) => (
                     <button
                       key={t}
                       type="button"
                       onClick={() => setFormData({...formData, type: t})}
                       className={`text-[10px] font-black uppercase py-3 rounded-xl border transition-all ${formData.type === t ? 'bg-accent text-white border-accent shadow-lg shadow-accent/20' : 'border-border text-muted-foreground hover:bg-secondary'}`}
                     >
-                      {t === 'campaign_budget' ? 'Standard' : t === 'mixed_budget' ? 'Mixed' : 'Adset'}
+                      {t === 'campaign_budget' ? (platform === 'meta' ? 'CBO' : 'Campaign') : (platform === 'meta' ? 'ABO' : 'Ad Group')}
                     </button>
                   ))}
                 </div>
@@ -205,19 +207,21 @@ export function NewCampaignModal({ isOpen, onClose, onSuccess, clients, initialC
                   <div className="flex items-start gap-3">
                     <div className="bg-accent/10 p-2 rounded-lg mt-0.5">
                       {formData.type === 'campaign_budget' ? <Target className="w-4 h-4 text-accent" /> : 
-                       formData.type === 'mixed_budget' ? <Briefcase className="w-4 h-4 text-accent" /> : 
                        <Layers className="w-4 h-4 text-accent" />}
                     </div>
                     <div>
                       <h4 className="text-[10px] font-black uppercase text-foreground tracking-widest leading-none mb-1">
-                        {formData.type === 'campaign_budget' ? 'Estructura Standard' : 
-                         formData.type === 'mixed_budget' ? 'Estructura Mixed' : 
-                         'Estructura Adset'}
+                        {formData.type === 'campaign_budget' 
+                         ? (platform === 'meta' ? 'CBO — Campaign Budget Optimization' : 'Campaign Budget')
+                         : (platform === 'meta' ? 'ABO — Ad Set Budget Optimization' : 'Ad Group Budget')}
                       </h4>
                       <p className="text-[11px] font-bold text-muted-foreground leading-relaxed">
-                        {formData.type === 'campaign_budget' && "Presupuesto único para toda la campaña (CBO). Ideal para gestión simplificada."}
-                        {formData.type === 'mixed_budget' && "Presupuesto dividido entre múltiples plataformas o canales digitales."}
-                        {formData.type === 'adset_budget' && "Presupuesto fragmentado por conjuntos de anuncios (ABO) para control de audiencias."}
+                        {formData.type === 'campaign_budget' && (platform === 'meta' 
+                          ? "Presupuesto único para toda la campaña (CBO). Meta distribuye automáticamente entre conjuntos."
+                          : "Presupuesto a nivel campaña. Google optimiza la distribución entre grupos de anuncios.")}
+                        {formData.type === 'adset_budget' && (platform === 'meta'
+                          ? "Presupuesto individual por conjunto de anuncios (ABO). Control granular de audiencias."
+                          : "Presupuesto individual por grupo de anuncios. Control granular de segmentación.")}
                       </p>
                     </div>
                   </div>
@@ -310,7 +314,7 @@ export function NewCampaignModal({ isOpen, onClose, onSuccess, clients, initialC
             <div className="space-y-4 animate-in fade-in duration-500">
                <div className="flex justify-between items-center">
                  <label className="block text-[10px] font-black uppercase text-muted-foreground tracking-widest pl-1">
-                    {formData.type === 'mixed_budget' ? 'Plataformas' : 'Conjuntos de Anuncios'}
+                    {platform === 'meta' ? 'Conjuntos de Anuncios' : 'Grupos de Anuncios'}
                  </label>
                  <button
                    type="button"
@@ -334,7 +338,7 @@ export function NewCampaignModal({ isOpen, onClose, onSuccess, clients, initialC
                             setAdvancedLabels(newLabels);
                           }}
                           className="w-full bg-secondary border border-border rounded-xl px-4 py-3 font-bold text-sm text-foreground focus:ring-4 focus:ring-accent/20 transition-all outline-none"
-                          placeholder={formData.type === 'mixed_budget' ? 'Ej. Facebook Ads' : 'Ej. Lookalike 1%'}
+                          placeholder={platform === 'meta' ? 'Ej. Lookalike 1%' : 'Ej. Keyword - Broad'}
                         />
                      </div>
                      {advancedLabels.length > 1 && (
