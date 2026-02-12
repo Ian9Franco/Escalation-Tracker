@@ -12,9 +12,12 @@ export interface Campaign {
   id: string;
   client_id: string;
   name: string;
-  status: 'active' | 'paused' | 'completed' | 'deleted';
+  status: 'active' | 'paused' | 'completed' | 'deleted' | 'archived';
   type: CampaignType;
+  currency: string;
+  initial_budget: number;
   current_week: number;
+  initial_strategy: number;
   increment_strategy: number;
   strategy_frequency: STRATEGY_FREQUENCY;
   start_date?: string;
@@ -55,8 +58,16 @@ export const FREQUENCY_DAYS: Record<STRATEGY_FREQUENCY, number> = {
 
 // Helper: period prefix for display
 export const FREQUENCY_PREFIX: Record<STRATEGY_FREQUENCY, string> = {
-  daily: 'D',
-  every_3_days: 'P',
-  weekly: 'S',
-  monthly: 'M',
+  daily: 'E',
+  every_3_days: 'E',
+  weekly: 'E',
+  monthly: 'E',
 };
+
+export interface StrategyAdjustment {
+  id: string;
+  campaign_id: string;
+  old_strategy: number;
+  new_strategy: number;
+  created_at: string;
+}

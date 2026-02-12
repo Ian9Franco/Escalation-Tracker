@@ -1,4 +1,4 @@
-# 📈 Escalation Tracker
+# 📈 F-Tracker
 
 Plataforma inteligente para el seguimiento y escalación progresiva de presupuestos en campañas de marketing digital (Meta Ads, Google Ads, etc.).
 

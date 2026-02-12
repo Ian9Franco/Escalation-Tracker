@@ -19,7 +19,14 @@ export function NewClientModal({ isOpen, onClose, onSuccess }: NewClientModalPro
     setLoading(true);
     try {
       if (!supabase) throw new Error('Base de datos no configurada. Revisa las variables de entorno.');
-      const { error } = await supabase.from('clients').insert([{ name }]);
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('No hay sesión activa.');
+
+      const { error } = await supabase.from('clients').insert([{ 
+        name,
+        user_id: session.user.id
+      }]);
       if (error) throw error;
       
       onSuccess();

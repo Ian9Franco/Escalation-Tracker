@@ -3,32 +3,83 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { Lock, User, ArrowRight, Activity, AlertTriangle } from 'lucide-react';
+import { Lock, User, ArrowRight, Activity, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { Captcha } from '@/components/Captcha';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const router = useRouter();
 
+  // NEXT_PUBLIC_TURNSTILE_SITE_KEY should be in .env
+  const SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA'; // Test key
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
-    // Map username to internal email
-    const email = username === 'ianp' ? 'ian9franco@gmail.com' : (username.includes('@') ? username : `${username}@fanger.design`);
+    // Dynamic User Resolution
+    let finalEmail = username;
+    
+    // If it's not an email, search in user_profiles
+    if (!username.includes('@')) {
+      try {
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('id')
+          .eq('username', username)
+          .single();
+        
+        if (username === 'ianp') {
+          finalEmail = 'ian9franco@gmail.com';
+        } else if (username === 'fanger') {
+          // Placeholder email for fanger admin
+          finalEmail = 'admin@fanger.design';
+        } else if (profile) {
+          finalEmail = `${username}@fanger.design`;
+        }
+      } catch (e) {
+        finalEmail = `${username}@fanger.design`;
+      }
+    }
 
     try {
       if (!supabase) throw new Error('Base de datos no conectada. Revisa Vercel env vars.');
       
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
+      const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: finalEmail,
         password,
+        options: {
+          captchaToken: captchaToken || undefined
+        }
       });
 
       if (signInError) throw signInError;
+
+      // Ensure profile exists and set roles after login
+      if (authData.user) {
+        const isAdmin = username === 'ianp' || username === 'fanger';
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('id', authData.user.id)
+          .single();
+
+        if (!profile) {
+          await supabase.from('user_profiles').insert({
+            id: authData.user.id,
+            username: username.includes('@') ? username.split('@')[0] : username,
+            theme: 'dark',
+            role: isAdmin ? 'admin' : 'user'
+          });
+        } else if (isAdmin && profile.role !== 'admin') {
+          // Ensure they are admins in the DB
+          await supabase.from('user_profiles').update({ role: 'admin' }).eq('id', authData.user.id);
+        }
+      }
 
       console.log('Login success, redirecting...');
       window.location.href = '/dashboard';
@@ -54,7 +105,7 @@ export default function LoginPage() {
               className="relative w-20 h-20 rounded-full border border-white/10 mx-auto shadow-2xl"
             />
           </div>
-          <h1 className="text-3xl font-black uppercase italic tracking-tighter">Escalation Tracker</h1>
+          <h1 className="text-3xl font-black uppercase italic tracking-tighter">F-Tracker</h1>
           <p className="text-xs font-bold text-muted-foreground uppercase tracking-[0.3em]">Acceso de Administrador</p>
         </div>
 
@@ -99,6 +150,11 @@ export default function LoginPage() {
                 <p className="text-xs font-bold">{error}</p>
               </div>
             )}
+
+            <Captcha 
+              siteKey={SITE_KEY} 
+              onVerify={(token) => setCaptchaToken(token)} 
+            />
 
             <button
               type="submit"

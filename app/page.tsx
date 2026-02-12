@@ -23,7 +23,7 @@ export default function Home() {
                 className="relative w-10 h-10 rounded-full border border-white/10"
               />
             </div>
-            <span className="text-xl font-black uppercase italic tracking-tighter">Escalation Tracker</span>
+            <span className="text-xl font-black uppercase italic tracking-tighter">F-Tracker</span>
           </div>
 
           <div className="flex items-center gap-8">
@@ -48,8 +48,8 @@ export default function Home() {
           </div>
           
           <h1 className="text-6xl md:text-8xl font-black tracking-tighter leading-[0.9] uppercase italic">
-            Control preciso <br />
-            <span className="text-accent underline decoration-accent/20 decoration-8 underline-offset-8">de presupuesto</span>
+            F-Tracker <br />
+            <span className="text-accent underline decoration-accent/20 decoration-8 underline-offset-8">Inteligente</span>
           </h1>
 
           <p className="text-xl md:text-2xl text-muted-foreground font-medium max-w-3xl mx-auto">
@@ -108,7 +108,7 @@ export default function Home() {
                     <div className="progress-fill shadow-[0_0_20px_rgba(255,69,0,0.5)]" style={{ width: '70%' }}></div>
                  </div>
                  <div className="flex justify-between font-black uppercase italic text-[10px] text-muted-foreground">
-                    <span>SEMANA ACTUAL</span>
+                    <span>ETAPA ACTUAL</span>
                     <span>OBJETIVO</span>
                  </div>
               </div>

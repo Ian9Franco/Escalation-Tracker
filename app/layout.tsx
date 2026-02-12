@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Escalation Tracker | fanger.design",
+  title: "F-Tracker | fanger.design",
   description: "Herramienta interna para el seguimiento de escalado de pauta.",
 };
 

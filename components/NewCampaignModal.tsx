@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Client, CampaignType, STRATEGY_FREQUENCY, FREQUENCY_LABELS } from '@/lib/types';
-import { X, Target, Save, Briefcase, Calendar, Info, Layers, Clock } from 'lucide-react';
+import { X, Target, Save, Briefcase, Calendar, Info, Layers, Clock, Plus, Trash2 } from 'lucide-react';
 
 interface NewCampaignModalProps {
   isOpen: boolean;
@@ -27,7 +27,9 @@ export function NewCampaignModal({ isOpen, onClose, onSuccess, clients, initialC
     strategy_frequency: 'weekly' as STRATEGY_FREQUENCY
   });
 
-  const [advancedLabels, setAdvancedLabels] = useState<string>('');
+  const [advancedLabels, setAdvancedLabels] = useState<{ id: string; value: string }[]>([
+    { id: Math.random().toString(36).substr(2, 9), value: '' }
+  ]);
 
   useEffect(() => {
     if (initialClientId) {
@@ -76,6 +78,8 @@ export function NewCampaignModal({ isOpen, onClose, onSuccess, clients, initialC
           currency: formData.currency,
           current_week: formData.current_week,
           increment_strategy: formData.increment_strategy,
+          initial_strategy: formData.increment_strategy,
+          initial_budget: formData.initial_budget ? Number(formData.initial_budget) : 0,
           target_budget: formData.target_budget ? Number(formData.target_budget) : null,
           target_week: formData.target_week ? Number(formData.target_week) : null,
           estimated_target_date: formData.estimated_target_date || null,
@@ -98,7 +102,7 @@ export function NewCampaignModal({ isOpen, onClose, onSuccess, clients, initialC
           is_projection: false
         });
       } else {
-        const labels = advancedLabels.split('\n').map(l => l.trim()).filter(l => l);
+        const labels = advancedLabels.map(l => l.value.trim()).filter(l => l);
         if (labels.length === 0) throw new Error('Ingresa al menos un conjunto');
         const budgetPerLabel = budget / labels.length;
         for (const label of labels) {
@@ -195,6 +199,29 @@ export function NewCampaignModal({ isOpen, onClose, onSuccess, clients, initialC
                     </button>
                   ))}
                 </div>
+                
+                {/* Dynamic Guide */}
+                <div className="mt-4 p-4 bg-secondary/50 rounded-2xl border border-border/50 animate-in fade-in slide-in-from-top-1 duration-300">
+                  <div className="flex items-start gap-3">
+                    <div className="bg-accent/10 p-2 rounded-lg mt-0.5">
+                      {formData.type === 'campaign_budget' ? <Target className="w-4 h-4 text-accent" /> : 
+                       formData.type === 'mixed_budget' ? <Briefcase className="w-4 h-4 text-accent" /> : 
+                       <Layers className="w-4 h-4 text-accent" />}
+                    </div>
+                    <div>
+                      <h4 className="text-[10px] font-black uppercase text-foreground tracking-widest leading-none mb-1">
+                        {formData.type === 'campaign_budget' ? 'Estructura Standard' : 
+                         formData.type === 'mixed_budget' ? 'Estructura Mixed' : 
+                         'Estructura Adset'}
+                      </h4>
+                      <p className="text-[11px] font-bold text-muted-foreground leading-relaxed">
+                        {formData.type === 'campaign_budget' && "Presupuesto único para toda la campaña (CBO). Ideal para gestión simplificada."}
+                        {formData.type === 'mixed_budget' && "Presupuesto dividido entre múltiples plataformas o canales digitales."}
+                        {formData.type === 'adset_budget' && "Presupuesto fragmentado por conjuntos de anuncios (ABO) para control de audiencias."}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -269,7 +296,7 @@ export function NewCampaignModal({ isOpen, onClose, onSuccess, clients, initialC
                       <div>
                         <p className="text-xs font-black text-accent uppercase tracking-wider leading-none mb-1">Cálculo proyectado</p>
                         <p className="text-sm font-bold text-foreground">
-                          Se alcanzará en la {(formData.strategy_frequency === 'daily' ? 'Día' : 'Semana')} {formData.target_week} ({new Date(formData.estimated_target_date).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })})
+                          Se alcanzará en la Etapa {formData.target_week} ({new Date(formData.estimated_target_date).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })})
                         </p>
                       </div>
                     </div>
@@ -280,18 +307,52 @@ export function NewCampaignModal({ isOpen, onClose, onSuccess, clients, initialC
 
           {/* Advanced Labels Field */}
           {formData.type !== 'campaign_budget' && (
-            <div className="space-y-3 animate-in fade-in duration-500">
-               <label className="block text-[10px] font-black uppercase text-muted-foreground tracking-widest pl-1">
-                  {formData.type === 'mixed_budget' ? 'Plataformas' : 'Conjuntos de Anuncios'} (Uno por línea)
-               </label>
-               <textarea
-                 value={advancedLabels}
-                 onChange={(e) => setAdvancedLabels(e.target.value)}
-                 className="w-full bg-secondary border border-border rounded-2xl px-6 py-6 font-mono text-sm min-h-[120px] focus:ring-4 focus:ring-accent/20 transition-all outline-none"
-                 placeholder={`Facebook Ads\nGoogle Ads\nTikTok...`}
-               />
+            <div className="space-y-4 animate-in fade-in duration-500">
+               <div className="flex justify-between items-center">
+                 <label className="block text-[10px] font-black uppercase text-muted-foreground tracking-widest pl-1">
+                    {formData.type === 'mixed_budget' ? 'Plataformas' : 'Conjuntos de Anuncios'}
+                 </label>
+                 <button
+                   type="button"
+                   onClick={() => setAdvancedLabels([...advancedLabels, { id: Math.random().toString(36).substr(2, 9), value: '' }])}
+                   className="text-[10px] font-black uppercase text-accent hover:opacity-80 flex items-center gap-1 transition-all"
+                 >
+                   <Plus className="w-3.5 h-3.5" /> Añadir
+                 </button>
+               </div>
+
+               <div className="space-y-3">
+                 {advancedLabels.map((label, index) => (
+                   <div key={label.id} className="flex gap-3 group/item animate-in slide-in-from-left-2 duration-200">
+                     <div className="flex-1 relative">
+                        <input
+                          type="text"
+                          value={label.value}
+                          onChange={(e) => {
+                            const newLabels = [...advancedLabels];
+                            newLabels[index].value = e.target.value;
+                            setAdvancedLabels(newLabels);
+                          }}
+                          className="w-full bg-secondary border border-border rounded-xl px-4 py-3 font-bold text-sm text-foreground focus:ring-4 focus:ring-accent/20 transition-all outline-none"
+                          placeholder={formData.type === 'mixed_budget' ? 'Ej. Facebook Ads' : 'Ej. Lookalike 1%'}
+                        />
+                     </div>
+                     {advancedLabels.length > 1 && (
+                       <button
+                         type="button"
+                         onClick={() => setAdvancedLabels(advancedLabels.filter(l => l.id !== label.id))}
+                         className="p-3 bg-secondary hover:bg-destructive/10 text-muted-foreground hover:text-destructive border border-border rounded-xl transition-all"
+                       >
+                         <Trash2 className="w-4 h-4" />
+                       </button>
+                     )}
+                   </div>
+                 ))}
+               </div>
+
                <p className="text-[10px] font-bold text-muted-foreground uppercase opacity-60">
                  * El presupuesto inicial se dividirá equitativamente.
+                 ({advancedLabels.filter(l => l.value.trim()).length > 0 ? (Number(formData.initial_budget || 0) / Math.max(1, advancedLabels.filter(l => l.value.trim()).length)).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' }) : '$0.00'} c/u)
                </p>
             </div>
           )}
