@@ -25,6 +25,7 @@ export interface Campaign {
   strategy_frequency: STRATEGY_FREQUENCY;
   start_date?: string;
   estimated_target_date?: string;
+  paused_until?: string | null;
   target_budget?: number;
   target_week?: number;
   created_at?: string;

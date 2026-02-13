@@ -82,7 +82,13 @@ export function CampaignCard({
               }`}>
               {campaign.type === 'mixed_budget' ? 'MIX' : campaign.type === 'adset_budget' ? 'ADSET' : 'STD'}
             </span>
-            {isPaused && <span className="text-[10px] text-warning font-black uppercase">⏸ PAUSADA</span>}
+            {isPaused && (
+              <span className="text-[10px] text-warning font-black uppercase">
+                ⏸ {campaign.paused_until 
+                  ? `PAUSADA (Vuelve: ${new Date(campaign.paused_until).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })})`
+                  : 'PAUSADA INDEFINIDA'}
+              </span>
+            )}
             {isFinished && <span className="text-[10px] text-success font-black uppercase flex items-center gap-1">🏆 ÉXITO</span>}
             <button
               onClick={() => setShowStrategyInfo(prev => ({ ...prev, [campaign.id]: !prev[campaign.id] }))}

@@ -16,6 +16,7 @@ import { ProjectionTable } from './_components/ProjectionTable';
 import { CampaignSidebar } from './_components/CampaignSidebar';
 import { OverrideModal } from './_components/OverrideModal';
 import { ConfirmationModal } from './_components/ConfirmationModal';
+import { PauseCampaignModal } from './_components/PauseCampaignModal';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,6 +52,7 @@ export default function Dashboard() {
   const [showStrategyInfo, setShowStrategyInfo] = useState<Record<string, boolean>>({});
   const [overrideModal, setOverrideModal] = useState<{ campaignId: string; campName: string } | null>(null);
   const [overridePercent, setOverridePercent] = useState('');
+  const [pauseModal, setPauseModal] = useState<{ campaignId: string; campName: string } | null>(null);
 
   // ─── Effects ───────────────────────────────────────────────────
 
@@ -270,23 +272,49 @@ export default function Dashboard() {
 
   async function handlePauseCampaign(campaignId: string) {
     if (!supabase) return;
-    setShowConfirmation({
-      isOpen: true,
-      title: '⏸️ Pausar Campaña',
-      message: '¿Estás seguro de que deseas pausar esta campaña? Podrás reanudarla en cualquier momento.',
-      type: 'warning',
-      confirmText: 'Pausar Campaña',
-      onConfirm: async () => {
-        await supabase.from('campaigns').update({ status: 'paused' }).eq('id', campaignId);
-        setShowConfirmation(prev => ({ ...prev, isOpen: false }));
-        if (selectedClient) fetchCampaignData(selectedClient);
+    const campaign = campaigns.find(c => c.id === campaignId);
+    if (campaign) {
+      setPauseModal({ campaignId: campaign.id, campName: campaign.name });
+    }
+  }
+
+  async function processPauseCampaign(date: Date | null) {
+    if (!supabase || !pauseModal) return;
+    
+    setLoading(true);
+    try {
+      const updates: any = { status: 'paused' };
+      if (date) {
+        updates.paused_until = date.toISOString();
+      } else {
+        updates.paused_until = null;
       }
-    });
+
+      const { error } = await supabase
+        .from('campaigns')
+        .update(updates)
+        .eq('id', pauseModal.campaignId);
+
+      if (error) throw error;
+
+      setPauseModal(null);
+      if (selectedClient) await fetchCampaignData(selectedClient);
+    } catch (err: any) {
+      setShowConfirmation({
+        isOpen: true,
+        title: '❌ Error al pausar',
+        message: err.message,
+        type: 'danger'
+      });
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleResumeCampaign(campaignId: string) {
     if (!supabase) return;
-    await supabase.from('campaigns').update({ status: 'active' }).eq('id', campaignId);
+    // Clears paused_until when resuming
+    await supabase.from('campaigns').update({ status: 'active', paused_until: null }).eq('id', campaignId);
     if (selectedClient) fetchCampaignData(selectedClient);
   }
 
@@ -512,6 +540,13 @@ export default function Dashboard() {
         setOverridePercent={setOverridePercent}
         setOverrideModal={setOverrideModal}
         handleUpdateStrategy={handleUpdateStrategy}
+      />
+
+      <PauseCampaignModal
+        isOpen={!!pauseModal}
+        onClose={() => setPauseModal(null)}
+        onConfirm={processPauseCampaign}
+        campaignName={pauseModal?.campName || ''}
       />
 
       <NewClientModal
