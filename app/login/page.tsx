@@ -15,7 +15,7 @@ export default function LoginPage() {
   const router = useRouter();
 
   // NEXT_PUBLIC_TURNSTILE_SITE_KEY should be in .env
-  const SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA'; // Test key
+  const SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '0x4AAAAAACbL6O3wOIb4AoIH'; // Production key fallback
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
