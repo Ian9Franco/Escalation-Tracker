@@ -69,7 +69,7 @@ export function CampaignCard({
   }
 
   return (
-    <div className={`card-widget p-8 transition-all group flex flex-col justify-between relative bg-card border-beam-container ${beamStatusClass} ${isPaused ? 'opacity-60 grayscale-[0.5]' : ''} ${isFinished ? 'border-success/30' : ''} reveal`}>
+    <div className={`card-widget p-8 transition-all group flex flex-col justify-between relative bg-card border-beam-container ${beamStatusClass} ${isFinished ? 'border-success/30' : ''} reveal`}>
 
       {/* Header Widget */}
       <div className="flex justify-between items-start mb-8">
@@ -194,6 +194,19 @@ export function CampaignCard({
             </div>
 
             <div className="space-y-3">
+              {isPaused && (
+                <div className="flex items-start gap-4">
+                  <div className="text-[9px] bg-warning/10 px-2 py-1 rounded font-black text-warning w-14 text-center text-[7px]">ESTADO</div>
+                  <p className="text-[11px] font-bold text-muted-foreground leading-tight">
+                    <span className="text-warning">Pausada</span>
+                    {campaign.paused_until ? (
+                      <> hasta el <span className="text-foreground">{new Date(campaign.paused_until).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })}</span></>
+                    ) : (
+                      ' indefinidamente'
+                    )}
+                  </p>
+                </div>
+              )}      
               <div className="flex items-start gap-4">
                 <div className="text-[9px] bg-secondary/50 px-2 py-1 rounded font-black text-muted-foreground w-14 text-center text-[7px]">CREACIÓN</div>
                 <p className="text-[11px] font-bold text-muted-foreground leading-tight">

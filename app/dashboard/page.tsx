@@ -457,7 +457,7 @@ export default function Dashboard() {
   // Helper: treat campaigns without platform as 'meta' (legacy data)
   const isMetaCampaign = (c: Campaign) => !c.platform || c.platform === 'meta';
   const metaCampaigns = campaigns.filter(isMetaCampaign);
-  const activeMetaCampaigns = metaCampaigns.filter(c => c.status === 'active');
+  const activeMetaCampaigns = metaCampaigns.filter(c => c.status === 'active' || c.status === 'paused');
   const currentWeek = activeMetaCampaigns[0]?.current_week || 1;
 
   // ─── Render ────────────────────────────────────────────────────
