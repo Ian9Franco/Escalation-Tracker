@@ -18,6 +18,55 @@ import { OverrideModal } from './_components/OverrideModal';
 import { ConfirmationModal } from './_components/ConfirmationModal';
 import { PauseCampaignModal } from './_components/PauseCampaignModal';
 
+// DnD Imports
+import {
+  DndContext, 
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  rectSortingStrategy,
+  useSortable
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+// Sortable Item Wrapper Component
+function SortableCampaignItem({ campaign, ...props }: { campaign: Campaign } & any) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id: campaign.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : 1,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <CampaignCard
+      campaign={campaign}
+      setNodeRef={setNodeRef}
+      style={style}
+      attributes={attributes}
+      listeners={listeners}
+      {...props}
+    />
+  );
+}
+
 export const dynamic = 'force-dynamic';
 
 export default function Dashboard() {
@@ -53,6 +102,18 @@ export default function Dashboard() {
   const [overrideModal, setOverrideModal] = useState<{ campaignId: string; campName: string } | null>(null);
   const [overridePercent, setOverridePercent] = useState('');
   const [pauseModal, setPauseModal] = useState<{ campaignId: string; campName: string } | null>(null);
+  
+  // DnD Sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   // ─── Effects ───────────────────────────────────────────────────
 
@@ -171,6 +232,7 @@ export default function Dashboard() {
         .from('campaigns')
         .select('*')
         .eq('client_id', clientId)
+        .order('sort_order', { ascending: true })
         .order('created_at', { ascending: false });
 
       if (campData) setCampaigns(campData);
@@ -420,6 +482,47 @@ export default function Dashboard() {
     }
   }
 
+  // DnD Handle Drag End
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+
+    if (active.id !== over?.id && over) {
+      setCampaigns((items) => {
+        const oldIndex = items.findIndex((c) => c.id === active.id);
+        const newIndex = items.findIndex((c) => c.id === over.id);
+        
+        const newItems = arrayMove(items, oldIndex, newIndex);
+        
+        // Persist new order
+        persistOrder(newItems);
+        
+        return newItems;
+      });
+    }
+  }
+
+  async function persistOrder(items: Campaign[]) {
+    if (!supabase) return;
+    
+    // Create updates array
+    const updates = items.map((campaign, index) => ({
+      id: campaign.id,
+      sort_order: index
+    }));
+
+    // Update locally to reflect formatting if needed (already done in state)
+
+    try {
+      // In a real app, you might want to batch this or use an RPC
+      // For now, loop invalidations or simple upserts
+      for (const update of updates) {
+        await supabase.from('campaigns').update({ sort_order: update.sort_order }).eq('id', update.id);
+      }
+    } catch (err) {
+      console.error('Error saving order', err);
+    }
+  }
+
   async function handleLogout() {
     if (!supabase) return;
     await supabase.auth.signOut();
@@ -499,33 +602,46 @@ export default function Dashboard() {
       />
 
       {/* Grid of Campaign Cards */}
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-20 reveal reveal-delay-1">
-        {loading && activeMetaCampaigns.length === 0 ? (
-          Array(3).fill(0).map((_, i) => <div key={i} className="card-widget p-8 h-64 animate-pulse bg-secondary/50 border-transparent" />)
-        ) : activeMetaCampaigns.length === 0 ? (
-          <div className="col-span-full text-center py-20 opacity-50 italic">No hay campañas de Meta activas</div>
-        ) : (
-          activeMetaCampaigns.map((campaign) => (
-            <CampaignCard
-              key={campaign.id}
-              campaign={campaign}
-              records={records}
-              adjustments={adjustments}
-              activeCampaignMenu={activeCampaignMenu}
-              setActiveCampaignMenu={setActiveCampaignMenu}
-              showStrategyInfo={showStrategyInfo}
-              setShowStrategyInfo={setShowStrategyInfo}
-              handleAdvanceCampaign={handleAdvanceCampaign}
-              handlePauseCampaign={handlePauseCampaign}
-              handleResumeCampaign={handleResumeCampaign}
-              handleDeleteCampaign={handleDeleteCampaign}
-              handleArchiveCampaign={handleArchiveCampaign}
-              handleCompleteCampaign={handleCompleteCampaign}
-              setOverrideModal={setOverrideModal}
-              setOverridePercent={setOverridePercent}
-            />
-          ))
-        )}
+      <section className="mb-20 reveal reveal-delay-1">
+        <DndContext 
+          sensors={sensors} 
+          collisionDetection={closestCenter} 
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext 
+            items={activeMetaCampaigns.map(c => c.id)}
+            strategy={rectSortingStrategy}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {loading && activeMetaCampaigns.length === 0 ? (
+                Array(3).fill(0).map((_, i) => <div key={i} className="card-widget p-8 h-64 animate-pulse bg-secondary/50 border-transparent" />)
+              ) : activeMetaCampaigns.length === 0 ? (
+                <div className="col-span-full text-center py-20 opacity-50 italic">No hay campañas de Meta activas</div>
+              ) : (
+                activeMetaCampaigns.map((campaign) => (
+                  <SortableCampaignItem
+                    key={campaign.id}
+                    campaign={campaign}
+                    records={records}
+                    adjustments={adjustments}
+                    activeCampaignMenu={activeCampaignMenu}
+                    setActiveCampaignMenu={setActiveCampaignMenu}
+                    showStrategyInfo={showStrategyInfo}
+                    setShowStrategyInfo={setShowStrategyInfo}
+                    handleAdvanceCampaign={handleAdvanceCampaign}
+                    handlePauseCampaign={handlePauseCampaign}
+                    handleResumeCampaign={handleResumeCampaign}
+                    handleDeleteCampaign={handleDeleteCampaign}
+                    handleArchiveCampaign={handleArchiveCampaign}
+                    handleCompleteCampaign={handleCompleteCampaign}
+                    setOverrideModal={setOverrideModal}
+                    setOverridePercent={setOverridePercent}
+                  />
+                ))
+              )}
+            </div>
+          </SortableContext>
+        </DndContext>
       </section>
 
       <ProjectionTable

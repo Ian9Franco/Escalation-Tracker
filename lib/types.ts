@@ -23,6 +23,7 @@ export interface Campaign {
   initial_strategy: number;
   increment_strategy: number;
   strategy_frequency: STRATEGY_FREQUENCY;
+  sort_order?: number;
   start_date?: string;
   estimated_target_date?: string;
   paused_until?: string | null;

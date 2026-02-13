@@ -12,6 +12,10 @@ interface CampaignCardProps {
   campaign: Campaign;
   records: WeeklyRecord[];
   adjustments: StrategyAdjustment[];
+  attributes?: any;
+  listeners?: any;
+  setNodeRef?: (node: HTMLElement | null) => void;
+  style?: React.CSSProperties;
   activeCampaignMenu: string | null;
   setActiveCampaignMenu: (id: string | null) => void;
   showStrategyInfo: Record<string, boolean>;
@@ -32,7 +36,8 @@ export function CampaignCard({
   showStrategyInfo, setShowStrategyInfo,
   handleAdvanceCampaign, handlePauseCampaign, handleResumeCampaign,
   handleDeleteCampaign, handleArchiveCampaign, handleCompleteCampaign,
-  setOverrideModal, setOverridePercent
+  setOverrideModal, setOverridePercent,
+  attributes, listeners, setNodeRef, style
 }: CampaignCardProps) {
   let currentBudget = 0;
   const campaignRecords = records.filter(r => r.campaign_id === campaign.id && r.week_number === campaign.current_week);
@@ -42,6 +47,11 @@ export function CampaignCard({
   } else {
     const record = campaignRecords.find(r => !r.label);
     currentBudget = record?.budget || 0;
+  }
+
+  // Fallback for Week 1 if no record exists yet (e.g. just created)
+  if (currentBudget === 0 && campaign.current_week === 1 && campaign.initial_budget) {
+    currentBudget = campaign.initial_budget;
   }
 
   const strategyPct = Math.round(Number(campaign.increment_strategy) * 100);
@@ -69,7 +79,10 @@ export function CampaignCard({
   }
 
   return (
-    <div className={`card-widget p-8 transition-all group flex flex-col justify-between relative bg-card border-beam-container ${beamStatusClass} ${isFinished ? 'border-success/30' : ''} reveal`}>
+    <div 
+      ref={setNodeRef} style={style} {...attributes} {...listeners}
+      className={`card-widget p-8 transition-all group flex flex-col justify-between relative bg-card border-beam-container ${beamStatusClass} ${isFinished ? 'border-success/30' : ''} reveal`}
+    >
 
       {/* Header Widget */}
       <div className="flex justify-between items-start mb-8">
@@ -217,7 +230,7 @@ export function CampaignCard({
               <div className="flex items-start gap-4">
                 <div className="text-[9px] bg-secondary/50 px-2 py-1 rounded font-black text-muted-foreground w-14 text-center text-[7px]">INICIAL</div>
                 <p className="text-[11px] font-bold text-muted-foreground leading-tight">
-                  Presupuesto arranque: <span className="text-foreground">{displayInitialBudget > 0 ? formatCurrency(displayInitialBudget) : 'No registrado'}</span>
+                  Presupuesto arranque: <span className="text-foreground">{displayInitialBudget && displayInitialBudget > 0 ? formatCurrency(displayInitialBudget) : 'No registrado'}</span>
                 </p>
               </div>
 
