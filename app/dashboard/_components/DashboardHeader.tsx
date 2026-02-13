@@ -3,7 +3,9 @@ import { Calendar, ChevronRight, Plus, LayoutGrid, Search } from 'lucide-react';
 
 interface DashboardHeaderProps {
   currentWeek: number;
-  handleBulkAdvance: () => void;
+  onAdvanceAll: () => void;
+  onRollbackAll: () => void;
+  canRollback: boolean;
   loading: boolean;
   campaigns: Campaign[];
   setIsCampaignModalOpen: (open: boolean) => void;
@@ -11,7 +13,17 @@ interface DashboardHeaderProps {
   platform: Platform;
 }
 
-export function DashboardHeader({ currentWeek, handleBulkAdvance, loading, campaigns, setIsCampaignModalOpen, supabaseConnected, platform }: DashboardHeaderProps) {
+export function DashboardHeader({ 
+  currentWeek, 
+  onAdvanceAll, 
+  onRollbackAll, 
+  canRollback, 
+  loading, 
+  campaigns, 
+  setIsCampaignModalOpen, 
+  supabaseConnected, 
+  platform 
+}: DashboardHeaderProps) {
   return (
     <header className="mb-14 flex flex-col md:flex-row md:items-end justify-between gap-6 px-2 reveal">
       <div className="space-y-6">
@@ -42,8 +54,18 @@ export function DashboardHeader({ currentWeek, handleBulkAdvance, loading, campa
       </div>
 
       <div className="flex flex-col md:flex-row items-center gap-4">
+        {canRollback && (
+          <button
+            onClick={onRollbackAll}
+            disabled={loading}
+            className="bg-secondary text-muted-foreground px-6 py-4 rounded-2xl font-black flex items-center gap-3 border border-border hover:bg-secondary/80 transition-all text-sm uppercase italic disabled:opacity-50"
+            title="Retroceder todas las campañas a la etapa anterior"
+          >
+            <ChevronRight className="w-5 h-5 text-muted-foreground rotate-180" /> Retroceder Todas
+          </button>
+        )}
         <button
-          onClick={handleBulkAdvance}
+          onClick={onAdvanceAll}
           disabled={loading || campaigns.filter(c => c.status === 'active').length === 0}
           className="bg-secondary text-foreground px-6 py-4 rounded-2xl font-black flex items-center gap-3 border border-border hover:bg-secondary/80 transition-all text-sm uppercase italic disabled:opacity-50"
         >

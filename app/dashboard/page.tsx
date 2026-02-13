@@ -17,6 +17,7 @@ import { CampaignSidebar } from './_components/CampaignSidebar';
 import { OverrideModal } from './_components/OverrideModal';
 import { ConfirmationModal } from './_components/ConfirmationModal';
 import { PauseCampaignModal } from './_components/PauseCampaignModal';
+import { AdvanceCampaignModal } from './_components/AdvanceCampaignModal';
 
 // DnD Imports
 import {
@@ -102,6 +103,7 @@ export default function Dashboard() {
   const [overrideModal, setOverrideModal] = useState<{ campaignId: string; campName: string } | null>(null);
   const [overridePercent, setOverridePercent] = useState('');
   const [pauseModal, setPauseModal] = useState<{ campaignId: string; campName: string } | null>(null);
+  const [advanceModal, setAdvanceModal] = useState<{ campaign: Campaign; records: WeeklyRecord[]; strategyPct: number } | null>(null);
   
   // DnD Sensors
   const sensors = useSensors(
@@ -265,14 +267,23 @@ export default function Dashboard() {
 
   async function handleAdvanceCampaign(campaign: Campaign, overrideStrategy?: number) {
     if (!supabase) return;
+    
+    const strategyPct = overrideStrategy || Math.round(Number(campaign.increment_strategy) * 100);
+    const campaignRecords = records.filter(r => r.campaign_id === campaign.id && r.week_number === campaign.current_week);
+
+    // If campaign has adsets/platforms, show the custom budget modal
+    if (campaign.type === 'adset_budget' || campaign.type === 'mixed_budget') {
+      setAdvanceModal({ campaign, records: campaignRecords, strategyPct });
+      return;
+    }
+
+    // Standard single-budget advance
     setLoading(true);
     try {
       const newWeek = campaign.current_week + 1;
-      const strategy = overrideStrategy ? overrideStrategy / 100 : Number(campaign.increment_strategy);
+      const strategy = strategyPct / 100;
 
-      const currentRecords = records.filter(r => r.campaign_id === campaign.id && r.week_number === campaign.current_week);
-
-      const newRecords = currentRecords.map(record => ({
+      const newRecords = campaignRecords.map(record => ({
         campaign_id: campaign.id,
         week_number: newWeek,
         budget: Math.round(Number(record.budget) * (1 + strategy) * 100) / 100,
@@ -301,6 +312,42 @@ export default function Dashboard() {
         message: 'Error al avanzar: ' + err.message,
         type: 'danger'
       });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function processCustomAdvance(customBudgets: { label: string | null; budget: number }[]) {
+    if (!supabase || !advanceModal) return;
+
+    setLoading(true);
+    try {
+      const { campaign } = advanceModal;
+      const newWeek = campaign.current_week + 1;
+
+      const newRecords = customBudgets.map(cb => ({
+        campaign_id: campaign.id,
+        week_number: newWeek,
+        budget: cb.budget,
+        label: cb.label,
+        advanced_at: new Date().toISOString()
+      }));
+
+      const { error: insertError } = await supabase
+        .from('weekly_records')
+        .insert(newRecords);
+      if (insertError) throw insertError;
+
+      const { error: updateError } = await supabase
+        .from('campaigns')
+        .update({ current_week: newWeek })
+        .eq('id', campaign.id);
+      if (updateError) throw updateError;
+
+      setAdvanceModal(null);
+      if (selectedClient) await fetchCampaignData(selectedClient);
+    } catch (err: any) {
+      alert('Error al avanzar con presupuestos personalizados: ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -437,6 +484,86 @@ export default function Dashboard() {
             if (selectedClient) fetchCampaignData(selectedClient);
           }
         });
+      }
+    });
+  }
+
+  async function handleRollbackCampaign(campaignId: string) {
+    if (!supabase) return;
+
+    const campaign = campaigns.find(c => c.id === campaignId);
+    if (!campaign || campaign.current_week <= 1) return;
+
+    setShowConfirmation({
+      isOpen: true,
+      title: '↩️ Confirmar Retroceso',
+      message: `¿Estás seguro de que quieres volver a la semana ${campaign.current_week - 1}? Esto eliminará los registros de presupuesto de la semana actual (${campaign.current_week}).`,
+      type: 'warning',
+      onConfirm: async () => {
+        setLoading(true);
+        try {
+          // Delete records for current week
+          const { error: deleteError } = await supabase
+            .from('weekly_records')
+            .delete()
+            .eq('campaign_id', campaignId)
+            .eq('week_number', campaign.current_week);
+          
+          if (deleteError) throw deleteError;
+
+          // Revert week number
+          const { error: updateError } = await supabase
+            .from('campaigns')
+            .update({ current_week: campaign.current_week - 1 })
+            .eq('id', campaignId);
+          
+          if (updateError) throw updateError;
+
+          if (selectedClient) await fetchCampaignData(selectedClient);
+        } catch (err: any) {
+          console.error(err);
+          alert('Error al retroceder la campaña');
+        } finally {
+          setLoading(false);
+          setShowConfirmation(prev => ({ ...prev, isOpen: false }));
+        }
+      }
+    });
+  }
+
+  async function handleRollbackAll() {
+    if (!supabase || activeMetaCampaigns.length === 0) return;
+
+    const canRollback = activeMetaCampaigns.filter(c => c.current_week > 1);
+    if (canRollback.length === 0) return;
+
+    setShowConfirmation({
+      isOpen: true,
+      title: '↩️ Retroceder TODAS',
+      message: `¿Retroceder las ${canRollback.length} campañas activas a su etapa anterior? Esto eliminará los datos de la semana actual.`,
+      type: 'warning',
+      onConfirm: async () => {
+        setLoading(true);
+        try {
+          for (const campaign of canRollback) {
+            await supabase
+              .from('weekly_records')
+              .delete()
+              .eq('campaign_id', campaign.id)
+              .eq('week_number', campaign.current_week);
+
+            await supabase
+              .from('campaigns')
+              .update({ current_week: campaign.current_week - 1 })
+              .eq('id', campaign.id);
+          }
+          if (selectedClient) await fetchCampaignData(selectedClient);
+        } catch (err: any) {
+          console.error(err);
+        } finally {
+          setLoading(false);
+          setShowConfirmation(prev => ({ ...prev, isOpen: false }));
+        }
       }
     });
   }
@@ -593,7 +720,9 @@ export default function Dashboard() {
 
       <DashboardHeader
         currentWeek={currentWeek}
-        handleBulkAdvance={handleBulkAdvance}
+        onAdvanceAll={handleBulkAdvance}
+        onRollbackAll={handleRollbackAll}
+        canRollback={activeMetaCampaigns.some(c => c.current_week > 1)}
         loading={loading}
         campaigns={metaCampaigns}
         setIsCampaignModalOpen={setIsCampaignModalOpen}
@@ -629,6 +758,7 @@ export default function Dashboard() {
                     showStrategyInfo={showStrategyInfo}
                     setShowStrategyInfo={setShowStrategyInfo}
                     handleAdvanceCampaign={handleAdvanceCampaign}
+                    handleRollbackCampaign={handleRollbackCampaign}
                     handlePauseCampaign={handlePauseCampaign}
                     handleResumeCampaign={handleResumeCampaign}
                     handleDeleteCampaign={handleDeleteCampaign}
@@ -664,6 +794,17 @@ export default function Dashboard() {
         onConfirm={processPauseCampaign}
         campaignName={pauseModal?.campName || ''}
       />
+
+      {advanceModal && (
+        <AdvanceCampaignModal
+          isOpen={!!advanceModal}
+          onClose={() => setAdvanceModal(null)}
+          campaign={advanceModal.campaign}
+          currentRecords={advanceModal.records}
+          strategyPct={advanceModal.strategyPct}
+          onConfirm={processCustomAdvance}
+        />
+      )}
 
       <NewClientModal
         isOpen={isClientModalOpen}

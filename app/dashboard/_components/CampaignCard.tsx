@@ -21,6 +21,7 @@ interface CampaignCardProps {
   showStrategyInfo: Record<string, boolean>;
   setShowStrategyInfo: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
   handleAdvanceCampaign: (campaign: Campaign) => void;
+  handleRollbackCampaign: (id: string) => void;
   handlePauseCampaign: (id: string) => void;
   handleResumeCampaign: (id: string) => void;
   handleDeleteCampaign: (id: string) => void;
@@ -34,7 +35,7 @@ export function CampaignCard({
   campaign, records, adjustments,
   activeCampaignMenu, setActiveCampaignMenu,
   showStrategyInfo, setShowStrategyInfo,
-  handleAdvanceCampaign, handlePauseCampaign, handleResumeCampaign,
+  handleAdvanceCampaign, handleRollbackCampaign, handlePauseCampaign, handleResumeCampaign,
   handleDeleteCampaign, handleArchiveCampaign, handleCompleteCampaign,
   setOverrideModal, setOverridePercent,
   attributes, listeners, setNodeRef, style
@@ -141,6 +142,14 @@ export function CampaignCard({
                     <button onClick={() => handleAdvanceCampaign(campaign)} className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-accent/10 text-accent font-bold rounded-xl transition-colors">
                       <ChevronRight className="w-4 h-4" /> Avanzar a {prefix}{campaign.current_week + 1}
                     </button>
+                    {campaign.current_week > 1 && (
+                      <button 
+                        onClick={() => handleRollbackCampaign(campaign.id)} 
+                        className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-secondary text-muted-foreground font-bold rounded-xl transition-colors"
+                      >
+                        <ChevronRight className="w-4 h-4 rotate-180" /> Retroceder a {prefix}{campaign.current_week - 1}
+                      </button>
+                    )}
                     <button
                       onClick={() => {
                         setOverrideModal({ campaignId: campaign.id, campName: campaign.name });
