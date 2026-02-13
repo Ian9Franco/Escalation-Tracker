@@ -28,8 +28,8 @@ export function NewCampaignModal({ isOpen, onClose, onSuccess, clients, initialC
     strategy_frequency: 'weekly' as STRATEGY_FREQUENCY
   });
 
-  const [advancedLabels, setAdvancedLabels] = useState<{ id: string; value: string }[]>([
-    { id: Math.random().toString(36).substr(2, 9), value: '' }
+  const [advancedLabels, setAdvancedLabels] = useState<{ id: string; value: string; budget: string }[]>([
+    { id: Math.random().toString(36).substr(2, 9), value: '', budget: '' }
   ]);
 
   useEffect(() => {
@@ -63,6 +63,21 @@ export function NewCampaignModal({ isOpen, onClose, onSuccess, clients, initialC
       }
     }
   }, [formData.initial_budget, formData.target_budget, formData.increment_strategy, formData.current_week, formData.strategy_frequency]);
+
+  // Proporcional budget distribution when total changes
+  useEffect(() => {
+    if (formData.type !== 'campaign_budget' && formData.initial_budget && advancedLabels.length > 0) {
+      const total = Number(formData.initial_budget);
+      const perLabel = Math.floor((total / advancedLabels.length) * 100) / 100;
+      
+      // Only auto-distribute if they haven't manually touched them or if it's the first time
+      // For now, let's just make it sync if total budget changes
+      setAdvancedLabels(prev => prev.map(l => ({
+        ...l,
+        budget: String(perLabel)
+      })));
+    }
+  }, [formData.initial_budget, formData.type]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -104,15 +119,19 @@ export function NewCampaignModal({ isOpen, onClose, onSuccess, clients, initialC
           is_projection: false
         });
       } else {
-        const labels = advancedLabels.map(l => l.value.trim()).filter(l => l);
+        const labels = advancedLabels.map(l => ({
+          name: l.value.trim(),
+          budget: Number(l.budget) || 0
+        })).filter(l => l.name);
+
         if (labels.length === 0) throw new Error('Ingresa al menos un conjunto');
-        const budgetPerLabel = budget / labels.length;
+        
         for (const label of labels) {
           records.push({
             campaign_id: campaign.id,
             week_number: formData.current_week,
-            label: label,
-            budget: Math.round(budgetPerLabel * 100) / 100,
+            label: label.name,
+            budget: label.budget,
             is_projection: false
           });
         }
@@ -318,7 +337,7 @@ export function NewCampaignModal({ isOpen, onClose, onSuccess, clients, initialC
                 </label>
                 <button
                   type="button"
-                  onClick={() => setAdvancedLabels([...advancedLabels, { id: Math.random().toString(36).substr(2, 9), value: '' }])}
+                  onClick={() => setAdvancedLabels([...advancedLabels, { id: Math.random().toString(36).substr(2, 9), value: '', budget: '' }])}
                   className="text-[10px] font-black uppercase text-accent hover:opacity-80 flex items-center gap-1 transition-all"
                 >
                   <Plus className="w-3.5 h-3.5" /> Añadir
@@ -328,7 +347,7 @@ export function NewCampaignModal({ isOpen, onClose, onSuccess, clients, initialC
               <div className="space-y-3">
                 {advancedLabels.map((label, index) => (
                   <div key={label.id} className="flex gap-3 group/item animate-in slide-in-from-left-2 duration-200">
-                    <div className="flex-1 relative">
+                    <div className="flex-[2] relative">
                       <input
                         type="text"
                         value={label.value}
@@ -339,6 +358,20 @@ export function NewCampaignModal({ isOpen, onClose, onSuccess, clients, initialC
                         }}
                         className="w-full bg-secondary border border-border rounded-xl px-4 py-3 font-bold text-sm text-foreground focus:ring-4 focus:ring-accent/20 transition-all outline-none"
                         placeholder={platform === 'meta' ? 'Ej. Lookalike 1%' : 'Ej. Keyword - Broad'}
+                      />
+                    </div>
+                    <div className="flex-1 relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-black text-xs opacity-50">$</span>
+                      <input
+                        type="number"
+                        value={label.budget}
+                        onChange={(e) => {
+                          const newLabels = [...advancedLabels];
+                          newLabels[index].budget = e.target.value;
+                          setAdvancedLabels(newLabels);
+                        }}
+                        className="w-full bg-secondary border border-border rounded-xl pl-6 pr-3 py-3 font-black text-sm text-foreground focus:ring-4 focus:ring-accent/20 transition-all outline-none tabular-nums"
+                        placeholder="0.00"
                       />
                     </div>
                     {advancedLabels.length > 1 && (
@@ -354,9 +387,8 @@ export function NewCampaignModal({ isOpen, onClose, onSuccess, clients, initialC
                 ))}
               </div>
 
-              <p className="text-[10px] font-bold text-muted-foreground uppercase opacity-60">
-                * El presupuesto inicial se dividirá equitativamente.
-                ({advancedLabels.filter(l => l.value.trim()).length > 0 ? (Number(formData.initial_budget || 0) / Math.max(1, advancedLabels.filter(l => l.value.trim()).length)).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' }) : '$0.00'} c/u)
+              <p className="text-[10px] font-bold text-muted-foreground uppercase opacity-60 italic">
+                * Puedes editar el presupuesto de cada conjunto individualmente.
               </p>
             </div>
           )}
