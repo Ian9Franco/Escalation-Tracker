@@ -356,6 +356,7 @@ export default function GoogleDashboard() {
     const strategies = new Set(activeCampaigns.map(c => Number(c.increment_strategy)));
 
     const processAdvance = async () => {
+      setShowConfirmation(prev => ({ ...prev, isOpen: false }));
       setLoading(true);
       try {
         for (const camp of activeCampaigns) {
@@ -370,7 +371,6 @@ export default function GoogleDashboard() {
 
           await handleAdvanceCampaign(camp);
         }
-        setShowConfirmation(prev => ({ ...prev, isOpen: false }));
       } finally {
         setLoading(false);
       }

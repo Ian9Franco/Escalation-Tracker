@@ -50,8 +50,7 @@ export function Captcha({ onVerify, siteKey }: CaptchaProps) {
             }
           },
           theme: 'dark',
-          retry: 'auto',
-          'retry-interval': 5000,
+          retry: 'never', // Disable retry to see the error message
         });
         widgetIdRef.current = id;
       } catch (e) {
@@ -89,7 +88,7 @@ export function Captcha({ onVerify, siteKey }: CaptchaProps) {
   }, [siteKey]);
 
   return (
-    <div className="flex justify-center my-4 overflow-hidden rounded-xl">
+    <div className="flex justify-center my-4 min-h-[65px] rounded-xl">
       <div ref={containerRef} id="turnstile-container"></div>
     </div>
   );
