@@ -100,8 +100,7 @@ export default function Dashboard() {
   const [isClientDropdownOpen, setIsClientDropdownOpen] = useState(false);
   const [activeCampaignMenu, setActiveCampaignMenu] = useState<string | null>(null);
   const [showStrategyInfo, setShowStrategyInfo] = useState<Record<string, boolean>>({});
-  const [overrideModal, setOverrideModal] = useState<{ campaignId: string; campName: string } | null>(null);
-  const [overridePercent, setOverridePercent] = useState('');
+  const [overrideModal, setOverrideModal] = useState<Campaign | null>(null);
   const [pauseModal, setPauseModal] = useState<{ campaignId: string; campName: string } | null>(null);
   const [advanceModal, setAdvanceModal] = useState<{ campaign: Campaign; records: WeeklyRecord[]; strategyPct: number } | null>(null);
   
@@ -353,15 +352,23 @@ export default function Dashboard() {
     }
   }
 
-  async function handleUpdateStrategy(campaignId: string, newPercent: number) {
-    const strategyDecimal = newPercent / 100;
+  async function handleUpdateStrategy(campaignId: string, data: { 
+    strategyPct: number; 
+    targetBudget: number; 
+    adsetTargets: Record<string, number> 
+  }) {
+    const strategyDecimal = data.strategyPct / 100;
     try {
       const { data: campaign } = await supabase.from('campaigns').select('increment_strategy').eq('id', campaignId).single();
       const oldStrategy = campaign?.increment_strategy || 0;
 
       const { error } = await supabase
         .from('campaigns')
-        .update({ increment_strategy: strategyDecimal })
+        .update({ 
+          increment_strategy: strategyDecimal,
+          target_budget: data.targetBudget,
+          adset_targets: data.adsetTargets
+        })
         .eq('id', campaignId);
 
       if (error) throw error;
@@ -765,7 +772,6 @@ export default function Dashboard() {
                     handleArchiveCampaign={handleArchiveCampaign}
                     handleCompleteCampaign={handleCompleteCampaign}
                     setOverrideModal={setOverrideModal}
-                    setOverridePercent={setOverridePercent}
                   />
                 ))
               )}
@@ -781,10 +787,10 @@ export default function Dashboard() {
       />
 
       <OverrideModal
-        overrideModal={overrideModal}
-        overridePercent={overridePercent}
-        setOverridePercent={setOverridePercent}
-        setOverrideModal={setOverrideModal}
+        isOpen={!!overrideModal}
+        onClose={() => setOverrideModal(null)}
+        campaign={overrideModal}
+        currentRecords={records.filter(r => r.campaign_id === overrideModal?.id && r.week_number === overrideModal?.current_week)}
         handleUpdateStrategy={handleUpdateStrategy}
       />
 

@@ -28,8 +28,8 @@ export function NewCampaignModal({ isOpen, onClose, onSuccess, clients, initialC
     strategy_frequency: 'weekly' as STRATEGY_FREQUENCY
   });
 
-  const [advancedLabels, setAdvancedLabels] = useState<{ id: string; value: string; budget: string }[]>([
-    { id: Math.random().toString(36).substr(2, 9), value: '', budget: '' }
+  const [advancedLabels, setAdvancedLabels] = useState<{ id: string; value: string; budget: string; target: string }[]>([
+    { id: Math.random().toString(36).substr(2, 9), value: '', budget: '', target: '' }
   ]);
 
   useEffect(() => {
@@ -101,7 +101,10 @@ export function NewCampaignModal({ isOpen, onClose, onSuccess, clients, initialC
           target_week: formData.target_week ? Number(formData.target_week) : null,
           estimated_target_date: formData.estimated_target_date || null,
           status: 'active',
-          strategy_frequency: formData.strategy_frequency
+          strategy_frequency: formData.strategy_frequency,
+          adset_targets: formData.type !== 'campaign_budget' 
+            ? Object.fromEntries(advancedLabels.filter(l => l.value.trim()).map(l => [l.value.trim(), Number(l.target) || 0]))
+            : {}
         }])
         .select()
         .single();
@@ -337,16 +340,23 @@ export function NewCampaignModal({ isOpen, onClose, onSuccess, clients, initialC
                 </label>
                 <button
                   type="button"
-                  onClick={() => setAdvancedLabels([...advancedLabels, { id: Math.random().toString(36).substr(2, 9), value: '', budget: '' }])}
+                  onClick={() => setAdvancedLabels([...advancedLabels, { id: Math.random().toString(36).substr(2, 9), value: '', budget: '', target: '' }])}
                   className="text-[10px] font-black uppercase text-accent hover:opacity-80 flex items-center gap-1 transition-all"
                 >
                   <Plus className="w-3.5 h-3.5" /> Añadir
                 </button>
               </div>
 
+              <div className="flex gap-4 px-1 text-[9px] font-black uppercase text-muted-foreground tracking-tighter opacity-40">
+                <span className="flex-[2]">Nombre</span>
+                <span className="flex-1">Inicial</span>
+                <span className="flex-1">Objetivo</span>
+                {advancedLabels.length > 1 && <span className="w-[46px]"></span>}
+              </div>
+
               <div className="space-y-3">
                 {advancedLabels.map((label, index) => (
-                  <div key={label.id} className="flex gap-3 group/item animate-in slide-in-from-left-2 duration-200">
+                  <div key={label.id} className="flex gap-2 group/item animate-in slide-in-from-left-2 duration-200">
                     <div className="flex-[2] relative">
                       <input
                         type="text"
@@ -357,11 +367,11 @@ export function NewCampaignModal({ isOpen, onClose, onSuccess, clients, initialC
                           setAdvancedLabels(newLabels);
                         }}
                         className="w-full bg-secondary border border-border rounded-xl px-4 py-3 font-bold text-sm text-foreground focus:ring-4 focus:ring-accent/20 transition-all outline-none"
-                        placeholder={platform === 'meta' ? 'Ej. Lookalike 1%' : 'Ej. Keyword - Broad'}
+                        placeholder={platform === 'meta' ? 'Ej. LAL 1%' : 'Ej. KW Broad'}
                       />
                     </div>
                     <div className="flex-1 relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-black text-xs opacity-50">$</span>
+                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground font-black text-[10px] opacity-30">$</span>
                       <input
                         type="number"
                         value={label.budget}
@@ -370,8 +380,22 @@ export function NewCampaignModal({ isOpen, onClose, onSuccess, clients, initialC
                           newLabels[index].budget = e.target.value;
                           setAdvancedLabels(newLabels);
                         }}
-                        className="w-full bg-secondary border border-border rounded-xl pl-6 pr-3 py-3 font-black text-sm text-foreground focus:ring-4 focus:ring-accent/20 transition-all outline-none tabular-nums"
-                        placeholder="0.00"
+                        className="w-full bg-secondary border border-border rounded-xl pl-4 pr-1 py-3 font-black text-xs text-foreground focus:ring-4 focus:ring-accent/20 transition-all outline-none tabular-nums"
+                        placeholder="Inic."
+                      />
+                    </div>
+                    <div className="flex-1 relative">
+                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground font-black text-[10px] opacity-30">$</span>
+                      <input
+                        type="number"
+                        value={label.target}
+                        onChange={(e) => {
+                          const newLabels = [...advancedLabels];
+                          newLabels[index].target = e.target.value;
+                          setAdvancedLabels(newLabels);
+                        }}
+                        className="w-full bg-secondary border border-border rounded-xl pl-4 pr-1 py-3 font-black text-xs text-foreground focus:ring-4 focus:ring-accent/20 transition-all outline-none tabular-nums"
+                        placeholder="Obj."
                       />
                     </div>
                     {advancedLabels.length > 1 && (

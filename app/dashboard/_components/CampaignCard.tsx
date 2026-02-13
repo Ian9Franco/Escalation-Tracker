@@ -27,8 +27,7 @@ interface CampaignCardProps {
   handleDeleteCampaign: (id: string) => void;
   handleArchiveCampaign: (id: string) => void;
   handleCompleteCampaign: (id: string) => void;
-  setOverrideModal: (value: { campaignId: string; campName: string } | null) => void;
-  setOverridePercent: (value: string) => void;
+  setOverrideModal: (campaign: Campaign | null) => void;
 }
 
 export function CampaignCard({
@@ -37,7 +36,7 @@ export function CampaignCard({
   showStrategyInfo, setShowStrategyInfo,
   handleAdvanceCampaign, handleRollbackCampaign, handlePauseCampaign, handleResumeCampaign,
   handleDeleteCampaign, handleArchiveCampaign, handleCompleteCampaign,
-  setOverrideModal, setOverridePercent,
+  setOverrideModal,
   attributes, listeners, setNodeRef, style
 }: CampaignCardProps) {
   let currentBudget = 0;
@@ -152,8 +151,7 @@ export function CampaignCard({
                     )}
                     <button
                       onClick={() => {
-                        setOverrideModal({ campaignId: campaign.id, campName: campaign.name });
-                        setOverridePercent(String(strategyPct));
+                        setOverrideModal(campaign);
                         setActiveCampaignMenu(null);
                       }}
                       className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-secondary text-foreground font-semibold rounded-xl transition-colors"
@@ -352,8 +350,13 @@ export function CampaignCard({
           <div className="space-y-1 max-h-[120px] overflow-y-auto pr-1 scrollbar-thin">
             {campaignRecords.length > 0 && (campaignRecords.every(r => !r.label) ? [campaignRecords[0]] : campaignRecords.filter(r => r.label)).map((r) => (
               <div key={r.id} className="flex justify-between items-center p-3 bg-secondary/30 rounded-xl border border-border/50 group/item transition-all hover:bg-secondary/50">
-                <span className="text-xs font-bold text-foreground truncate max-w-[150px]">{r.label || 'Global'}</span>
-                <span className="text-xs font-black text-accent tabular-nums">{formatCurrency(r.budget)}</span>
+                <span className="text-xs font-bold text-foreground truncate max-w-[120px]">{r.label || 'Global'}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black text-accent tabular-nums">{formatCurrency(r.budget)}</span>
+                  {r.label && campaign.adset_targets?.[r.label] && (
+                    <span className="text-[9px] font-black text-muted-foreground/40 tabular-nums">/ {formatCurrency(campaign.adset_targets[r.label])}</span>
+                  )}
+                </div>
               </div>
             ))}
           </div>

@@ -49,8 +49,7 @@ export default function GoogleDashboard() {
   const [isClientDropdownOpen, setIsClientDropdownOpen] = useState(false);
   const [activeCampaignMenu, setActiveCampaignMenu] = useState<string | null>(null);
   const [showStrategyInfo, setShowStrategyInfo] = useState<Record<string, boolean>>({});
-  const [overrideModal, setOverrideModal] = useState<{ campaignId: string; campName: string } | null>(null);
-  const [overridePercent, setOverridePercent] = useState('');
+  const [overrideModal, setOverrideModal] = useState<Campaign | null>(null);
 
   const PLATFORM: Platform = 'google';
 
@@ -240,15 +239,104 @@ export default function GoogleDashboard() {
     }
   }
 
-  async function handleUpdateStrategy(campaignId: string, newPercent: number) {
-    const strategyDecimal = newPercent / 100;
+  async function handleRollbackCampaign(campaignId: string) {
+    if (!supabase) return;
+
+    const campaign = campaigns.find(c => c.id === campaignId);
+    if (!campaign || campaign.current_week <= 1) return;
+
+    setShowConfirmation({
+      isOpen: true,
+      title: '↩️ Confirmar Retroceso',
+      message: `¿Estás seguro de que quieres volver a la semana ${campaign.current_week - 1}? Esto eliminará los registros de presupuesto de la semana actual (${campaign.current_week}).`,
+      type: 'warning',
+      onConfirm: async () => {
+        setLoading(true);
+        try {
+          // Delete records for current week
+          const { error: deleteError } = await supabase
+            .from('weekly_records')
+            .delete()
+            .eq('campaign_id', campaignId)
+            .eq('week_number', campaign.current_week);
+          
+          if (deleteError) throw deleteError;
+
+          // Revert week number
+          const { error: updateError } = await supabase
+            .from('campaigns')
+            .update({ current_week: campaign.current_week - 1 })
+            .eq('id', campaignId);
+          
+          if (updateError) throw updateError;
+
+          if (selectedClient) await fetchCampaignData(selectedClient);
+        } catch (err: any) {
+          console.error(err);
+          alert('Error al retroceder la campaña');
+        } finally {
+          setLoading(false);
+          setShowConfirmation(prev => ({ ...prev, isOpen: false }));
+        }
+      }
+    });
+  }
+
+  async function handleRollbackAll() {
+    const activeGoogleCampaigns = campaigns.filter(c => c.status === 'active' && c.platform === PLATFORM);
+    if (!supabase || activeGoogleCampaigns.length === 0) return;
+
+    const canRollback = activeGoogleCampaigns.filter(c => c.current_week > 1);
+    if (canRollback.length === 0) return;
+
+    setShowConfirmation({
+      isOpen: true,
+      title: '↩️ Retroceder TODAS',
+      message: `¿Retroceder las ${canRollback.length} campañas activas a su etapa anterior? Esto eliminará los datos de la semana actual.`,
+      type: 'warning',
+      onConfirm: async () => {
+        setLoading(true);
+        try {
+          for (const campaign of canRollback) {
+            await supabase
+              .from('weekly_records')
+              .delete()
+              .eq('campaign_id', campaign.id)
+              .eq('week_number', campaign.current_week);
+
+            await supabase
+              .from('campaigns')
+              .update({ current_week: campaign.current_week - 1 })
+              .eq('id', campaign.id);
+          }
+          if (selectedClient) await fetchCampaignData(selectedClient);
+        } catch (err: any) {
+          console.error(err);
+        } finally {
+          setLoading(false);
+          setShowConfirmation(prev => ({ ...prev, isOpen: false }));
+        }
+      }
+    });
+  }
+
+  async function handleUpdateStrategy(campaignId: string, data: { 
+    strategyPct: number; 
+    targetBudget: number; 
+    adsetTargets: Record<string, number> 
+  }) {
+    const strategyDecimal = data.strategyPct / 100;
     try {
       const { data: campaign } = await supabase.from('campaigns').select('increment_strategy').eq('id', campaignId).single();
       const oldStrategy = campaign?.increment_strategy || 0;
 
       const { error } = await supabase
         .from('campaigns')
-        .update({ increment_strategy: strategyDecimal })
+        .update({ 
+          increment_strategy: strategyDecimal,
+          target_budget: data.targetBudget,
+          adset_targets: data.adsetTargets
+        })
         .eq('id', campaignId);
 
       if (error) throw error;
@@ -456,7 +544,9 @@ export default function GoogleDashboard() {
 
       <DashboardHeader
         currentWeek={currentWeek}
-        handleBulkAdvance={handleBulkAdvance}
+        onAdvanceAll={handleBulkAdvance}
+        onRollbackAll={handleRollbackAll}
+        canRollback={campaigns.filter(c => c.status === 'active' && c.platform === PLATFORM).some(c => c.current_week > 1)}
         loading={loading}
         campaigns={campaigns.filter(c => c.platform === PLATFORM)}
         setIsCampaignModalOpen={setIsCampaignModalOpen}
@@ -482,13 +572,13 @@ export default function GoogleDashboard() {
               showStrategyInfo={showStrategyInfo}
               setShowStrategyInfo={setShowStrategyInfo}
               handleAdvanceCampaign={handleAdvanceCampaign}
+              handleRollbackCampaign={handleRollbackCampaign}
               handlePauseCampaign={handlePauseCampaign}
               handleResumeCampaign={handleResumeCampaign}
               handleDeleteCampaign={handleDeleteCampaign}
               handleArchiveCampaign={handleArchiveCampaign}
               handleCompleteCampaign={handleCompleteCampaign}
               setOverrideModal={setOverrideModal}
-              setOverridePercent={setOverridePercent}
             />
           ))
         )}
@@ -501,10 +591,10 @@ export default function GoogleDashboard() {
       />
 
       <OverrideModal
-        overrideModal={overrideModal}
-        overridePercent={overridePercent}
-        setOverridePercent={setOverridePercent}
-        setOverrideModal={setOverrideModal}
+        isOpen={!!overrideModal}
+        onClose={() => setOverrideModal(null)}
+        campaign={overrideModal}
+        currentRecords={records.filter(r => r.campaign_id === overrideModal?.id && r.week_number === overrideModal?.current_week)}
         handleUpdateStrategy={handleUpdateStrategy}
       />
 

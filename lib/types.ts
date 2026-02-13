@@ -29,6 +29,7 @@ export interface Campaign {
   paused_until?: string | null;
   target_budget?: number;
   target_week?: number;
+  adset_targets?: Record<string, number>;
   created_at?: string;
 }
 
