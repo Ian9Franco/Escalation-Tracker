@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 
 interface CaptchaProps {
   onVerify: (token: string) => void;
@@ -17,38 +17,56 @@ declare global {
 export function Captcha({ onVerify, siteKey }: CaptchaProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
+  // Store onVerify in a ref so changes don't trigger re-renders/re-mounts
+  const onVerifyRef = useRef(onVerify);
+  onVerifyRef.current = onVerify;
 
   useEffect(() => {
     let isMounted = true;
 
-    // Prevent multiple script loads
+    const renderCaptcha = () => {
+      // Only render if: mounted, container exists, turnstile loaded, and widget not already rendered
+      if (!window.turnstile || !containerRef.current || !isMounted || widgetIdRef.current) {
+        return;
+      }
+
+      try {
+        const id = window.turnstile.render(containerRef.current, {
+          sitekey: siteKey,
+          callback: (token: string) => {
+            // Use the ref to always call the latest onVerify without it being a dependency
+            onVerifyRef.current(token);
+          },
+          'expired-callback': () => {
+            // When the token expires, reset the widget cleanly instead of destroying/recreating
+            if (widgetIdRef.current) {
+              window.turnstile.reset(widgetIdRef.current);
+            }
+          },
+          'error-callback': () => {
+            // On error, reset instead of full re-render
+            if (widgetIdRef.current) {
+              window.turnstile.reset(widgetIdRef.current);
+            }
+          },
+          theme: 'dark',
+          retry: 'auto',
+          'retry-interval': 5000,
+        });
+        widgetIdRef.current = id;
+      } catch (e) {
+        console.error('Turnstile render error:', e);
+      }
+    };
+
+    // Load the script only once
     if (!document.querySelector('script[src*="turnstile"]')) {
       const script = document.createElement('script');
-      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback&render=explicit';
       script.async = true;
       script.defer = true;
       document.head.appendChild(script);
     }
-
-    const renderCaptcha = () => {
-      if (window.turnstile && containerRef.current && isMounted && !widgetIdRef.current) {
-        // Clear container just in case
-        containerRef.current.innerHTML = '';
-        
-        try {
-          const id = window.turnstile.render(containerRef.current, {
-            sitekey: siteKey,
-            callback: (token: string) => {
-              onVerify(token);
-            },
-            theme: 'dark',
-          });
-          widgetIdRef.current = id;
-        } catch (e) {
-          console.error('Turnstile render error:', e);
-        }
-      }
-    };
 
     if (window.turnstile) {
       renderCaptcha();
@@ -61,13 +79,14 @@ export function Captcha({ onVerify, siteKey }: CaptchaProps) {
       if (window.turnstile && widgetIdRef.current) {
         try {
           window.turnstile.remove(widgetIdRef.current);
-          widgetIdRef.current = null;
         } catch (e) {
           // Ignore removal errors on unmount
         }
+        widgetIdRef.current = null;
       }
     };
-  }, [onVerify, siteKey]);
+    // siteKey is the only real dependency — onVerify is handled via ref
+  }, [siteKey]);
 
   return (
     <div className="flex justify-center my-4 overflow-hidden rounded-xl">

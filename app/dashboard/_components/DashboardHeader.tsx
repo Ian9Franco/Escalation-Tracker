@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { Campaign, Platform } from '@/lib/types';
 import { Calendar, ChevronRight, Plus, LayoutGrid, Search } from 'lucide-react';
 
@@ -18,18 +17,18 @@ export function DashboardHeader({ currentWeek, handleBulkAdvance, loading, campa
       <div className="space-y-6">
         {/* Platform Switcher */}
         <div className="flex p-1 bg-secondary/50 border border-border rounded-full w-fit">
-          <Link 
-            href="/dashboard" 
+          <a
+            href="/dashboard"
             className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-widest transition-all ${platform === 'meta' ? 'bg-background text-foreground shadow-sm border border-border/50' : 'text-muted-foreground hover:text-foreground'}`}
           >
             <LayoutGrid className="w-3.5 h-3.5" /> Meta Ads
-          </Link>
-          <Link 
-            href="/dashboard/google" 
+          </a>
+          <a
+            href="/dashboard/google"
             className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-widest transition-all ${platform === 'google' ? 'bg-background text-foreground shadow-sm border border-border/50' : 'text-muted-foreground hover:text-foreground'}`}
           >
             <Search className="w-3.5 h-3.5" /> Google Ads
-          </Link>
+          </a>
         </div>
 
         <div>
@@ -43,14 +42,14 @@ export function DashboardHeader({ currentWeek, handleBulkAdvance, loading, campa
       </div>
 
       <div className="flex flex-col md:flex-row items-center gap-4">
-        <button 
+        <button
           onClick={handleBulkAdvance}
           disabled={loading || campaigns.filter(c => c.status === 'active').length === 0}
           className="bg-secondary text-foreground px-6 py-4 rounded-2xl font-black flex items-center gap-3 border border-border hover:bg-secondary/80 transition-all text-sm uppercase italic disabled:opacity-50"
         >
           <ChevronRight className="w-5 h-5 text-accent" /> Avanzar Todas
         </button>
-        <button 
+        <button
           onClick={() => setIsCampaignModalOpen(true)}
           disabled={!supabaseConnected}
           className="bg-accent text-white px-8 py-4 rounded-2xl font-black flex items-center gap-3 shadow-[0_10px_40px_-10px_rgba(255,69,0,0.5)] hover:scale-[1.05] transition-all text-lg uppercase italic disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed"

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Lock, User, ArrowRight, Activity, AlertTriangle, ShieldCheck } from 'lucide-react';
@@ -23,7 +23,7 @@ export default function LoginPage() {
 
     // Dynamic User Resolution
     let finalEmail = username;
-    
+
     // If it's not an email, search in user_profiles
     if (!username.includes('@')) {
       try {
@@ -32,7 +32,7 @@ export default function LoginPage() {
           .select('id')
           .eq('username', username)
           .single();
-        
+
         if (username === 'ianp') {
           finalEmail = 'ian9franco@gmail.com';
         } else if (username === 'fanger') {
@@ -48,7 +48,7 @@ export default function LoginPage() {
 
     try {
       if (!supabase) throw new Error('Base de datos no conectada. Revisa Vercel env vars.');
-      
+
       const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
         email: finalEmail,
         password,
@@ -94,14 +94,14 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6 selection:bg-accent selection:text-white">
       <div className="w-full max-w-md animate-in fade-in zoom-in-95 duration-700">
-        
+
         {/* Logo/Branding */}
         <div className="text-center mb-10 space-y-4">
           <div className="relative inline-block group">
             <div className="absolute -inset-2 bg-gradient-to-r from-accent to-orange-400 rounded-full blur opacity-30 group-hover:opacity-100 transition duration-1000"></div>
-            <img 
-              src="/android-chrome-192x192.png" 
-              alt="Logo" 
+            <img
+              src="/android-chrome-192x192.png"
+              alt="Logo"
               className="relative w-20 h-20 rounded-full border border-white/10 mx-auto shadow-2xl"
             />
           </div>
@@ -112,7 +112,7 @@ export default function LoginPage() {
         {/* Login Card */}
         <div className="card-widget p-10 space-y-8 bg-card border-white/5 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.5)]">
           <form onSubmit={handleLogin} className="space-y-6">
-            
+
             <div className="space-y-3">
               <label className="block text-[10px] font-black uppercase text-muted-foreground tracking-widest pl-1 flex items-center gap-2">
                 <User className="w-3 h-3 text-accent" /> Usuario
@@ -151,9 +151,9 @@ export default function LoginPage() {
               </div>
             )}
 
-            <Captcha 
-              siteKey={SITE_KEY} 
-              onVerify={(token) => setCaptchaToken(token)} 
+            <Captcha
+              siteKey={SITE_KEY}
+              onVerify={useCallback((token: string) => setCaptchaToken(token), [])}
             />
 
             <button
@@ -174,9 +174,9 @@ export default function LoginPage() {
 
         {/* Footer Link */}
         <div className="text-center mt-10">
-          <a 
-            href="https://www.fangerdesign.com.ar/contacto/" 
-            target="_blank" 
+          <a
+            href="https://www.fangerdesign.com.ar/contacto/"
+            target="_blank"
             rel="noopener noreferrer"
             className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] hover:text-accent transition-colors"
           >

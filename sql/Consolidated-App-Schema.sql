@@ -1,7 +1,10 @@
 -- ============================================================
--- ESCALATION TRACKER - SCHEMA CONSOLIDADO
+-- [1/5] ESCALATION TRACKER - SCHEMA CONSOLIDADO
 -- Última actualización: 2026-02-11 (Phase 3)
 -- 
+-- ORDEN DE EJECUCIÓN: 1° (primero)
+-- Crea todas las tablas base: clients, campaigns, weekly_records,
+-- strategy_adjustments, user_profiles + políticas RLS.
 -- Copiar y pegar COMPLETO en Supabase SQL Editor.
 -- Seguro de ejecutar múltiples veces (IF NOT EXISTS).
 -- ============================================================
@@ -84,6 +87,7 @@ CREATE TABLE IF NOT EXISTS strategy_adjustments (
 );
 
 ALTER TABLE strategy_adjustments ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow all for now on adjustments" ON strategy_adjustments;
 CREATE POLICY "Allow all for now on adjustments" ON strategy_adjustments FOR ALL USING (true);
 
 -- 6. Perfiles de Usuario
@@ -97,7 +101,9 @@ CREATE TABLE IF NOT EXISTS user_profiles (
 );
 
 ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public search by username" ON user_profiles;
 CREATE POLICY "Public search by username" ON user_profiles FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Users own profile access" ON user_profiles;
 CREATE POLICY "Users own profile access" ON user_profiles FOR ALL USING (auth.uid() = id);
 
 -- 7. Policitas para historial seguiran el patron de campaigns

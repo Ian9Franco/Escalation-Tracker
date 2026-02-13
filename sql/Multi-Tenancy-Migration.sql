@@ -1,5 +1,10 @@
 -- ============================================================
--- MULTI-TENANCY & ADMIN ROLES MIGRATION
+-- [4/5] MULTI-TENANCY & ADMIN ROLES MIGRATION
+--
+-- ORDEN DE EJECUCIÓN: 4° (después de Add-User-Profiles)
+-- Agrega roles (admin/user) a user_profiles, user_id a clients,
+-- y reconfigura RLS para multi-tenancy con permisos por ownership.
+-- Seguro de ejecutar múltiples veces.
 -- ============================================================
 
 -- 1. Add role to user_profiles

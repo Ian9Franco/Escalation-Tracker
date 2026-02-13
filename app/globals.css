@@ -375,12 +375,6 @@ body {
   }
 
   /* Hide everything in main except the export container */
-  body {
-    background: white !important;
-    color: black !important;
-    overflow: visible !important;
-  }
-
   main > *:not(.export-container) {
     display: none !important;
   }
@@ -399,11 +393,75 @@ body {
   }
 
   /* Hide the section header (title + badge), keep only the table */
-  .export-container > div:first-child {
+  .export-container > div:nth-child(2) {
     display: none !important;
   }
 
-  /* Expand the export container fully */
+  /* ─── Print Branding Elements ─────────────────────────────── */
+
+  /* Show print header & footer */
+  .print-header,
+  .print-footer {
+    display: flex !important;
+  }
+
+  .print-header {
+    padding: 16px 24px !important;
+    border-bottom: 2px solid #ddd !important;
+    align-items: center !important;
+  }
+
+  .print-logo-app {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 50% !important;
+  }
+
+  .print-title {
+    font-size: 18px !important;
+    font-weight: 900 !important;
+    letter-spacing: -0.02em !important;
+    font-style: italic !important;
+    text-transform: uppercase !important;
+  }
+
+  .print-subtitle {
+    font-size: 9px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.15em !important;
+    opacity: 0.6 !important;
+  }
+
+  .print-footer {
+    padding: 12px 24px !important;
+    border-top: 2px solid #ddd !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+  }
+
+  .print-logo-fanger {
+    height: 24px !important;
+    width: auto !important;
+    object-fit: contain !important;
+  }
+
+  .print-copyright {
+    font-size: 8px !important;
+    font-weight: 900 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.15em !important;
+    opacity: 0.5 !important;
+  }
+
+  /* ─── Light Theme Print (default) ─────────────────────────── */
+
+  body {
+    background: white !important;
+    color: black !important;
+    overflow: visible !important;
+  }
+
   .export-container {
     position: relative !important;
     width: 100% !important;
@@ -481,4 +539,69 @@ body {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
+
+  .print-header {
+    color: black !important;
+    background: white !important;
+  }
+
+  .print-footer {
+    color: black !important;
+    background: white !important;
+  }
+
+  /* ─── Dark Theme Print ─────────────────────────────────────── */
+
+  .dark body,
+  body.dark {
+    background: #0a0a0a !important;
+    color: #ffffff !important;
+  }
+
+  .dark .export-container {
+    background: #0a0a0a !important;
+    border-color: #2c2c2e !important;
+  }
+
+  .dark .export-container table {
+    color: #ffffff !important;
+  }
+
+  .dark .export-container th {
+    border-color: #333 !important;
+    color: #ffffff !important;
+    background: #1a1a1a !important;
+  }
+
+  .dark .export-container td {
+    border-color: #252525 !important;
+    color: #e0e0e0 !important;
+    background: transparent !important;
+  }
+
+  .dark .projection-row-header {
+    background-color: #1a1a1a !important;
+  }
+
+  .dark .projection-current-week-column {
+    background-color: rgba(255, 69, 0, 0.12) !important;
+  }
+
+  .dark .print-header {
+    color: #ffffff !important;
+    background: #0a0a0a !important;
+    border-bottom-color: #333 !important;
+  }
+
+  .dark .print-footer {
+    color: #ffffff !important;
+    background: #0a0a0a !important;
+    border-top-color: #333 !important;
+  }
+
+  .dark .print-logo-fanger {
+    /* Use the light logo for dark backgrounds */
+    filter: brightness(10) !important;
+  }
 }
+

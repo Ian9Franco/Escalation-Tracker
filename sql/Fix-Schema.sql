@@ -1,7 +1,10 @@
 -- ============================================================
--- FIX: Agregar columnas faltantes a tablas existentes
+-- [2/5] FIX: Agregar columnas faltantes a tablas existentes
 -- Última actualización: 2026-02-11 (Phase 3)
 --
+-- ORDEN DE EJECUCIÓN: 2° (después de Consolidated-App-Schema)
+-- Agrega columnas que pueden faltar: strategy_frequency, start_date,
+-- estimated_target_date, currency, advanced_at, override_strategy, etc.
 -- EJECUTAR en Supabase SQL Editor si ya tenés las tablas creadas.
 -- Seguro de ejecutar múltiples veces (IF NOT EXISTS).
 -- ============================================================

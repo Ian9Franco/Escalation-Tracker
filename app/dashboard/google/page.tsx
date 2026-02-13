@@ -105,6 +105,8 @@ export default function GoogleDashboard() {
       return;
     }
 
+    let profileClientId: string | null = null;
+
     try {
       const { data: profile } = await supabase
         .from('user_profiles')
@@ -122,6 +124,7 @@ export default function GoogleDashboard() {
           }
         }
         if (profile.last_client_id) {
+          profileClientId = profile.last_client_id;
           setSelectedClient(profile.last_client_id);
         }
       }
@@ -129,7 +132,7 @@ export default function GoogleDashboard() {
       console.error('Error loading profile:', err);
     }
 
-    fetchInitialData();
+    fetchInitialData(profileClientId);
   }
 
   async function persistLastClient(clientId: string) {
@@ -139,20 +142,22 @@ export default function GoogleDashboard() {
     }
   }
 
-  async function fetchInitialData() {
+  async function fetchInitialData(knownClientId?: string | null) {
     try {
       const { data } = await supabase.from('clients').select('*').order('name');
       if (data && data.length > 0) {
         setClients(data);
-        if (!selectedClient) {
-          setSelectedClient(data[0].id);
-        }
+
+        const finalClientId = knownClientId || selectedClient || data[0].id;
+        setSelectedClient(finalClientId);
+
+        await fetchCampaignData(finalClientId);
+        return;
       }
     } catch (err) {
       console.error('Error fetching clients:', err);
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   }
 
   async function fetchCampaignData(clientId: string) {
@@ -163,7 +168,7 @@ export default function GoogleDashboard() {
         .select('*')
         .eq('client_id', clientId)
         .order('created_at', { ascending: false });
-      
+
       if (campData) setCampaigns(campData);
 
       const campaignIds = (campData || []).map((c: Campaign) => c.id);
@@ -198,15 +203,15 @@ export default function GoogleDashboard() {
     try {
       const newWeek = campaign.current_week + 1;
       const strategy = overrideStrategy ? overrideStrategy / 100 : Number(campaign.increment_strategy);
-      
+
       const currentRecords = records.filter(r => r.campaign_id === campaign.id && r.week_number === campaign.current_week);
-      
+
       const newRecords = currentRecords.map(record => ({
         campaign_id: campaign.id,
         week_number: newWeek,
         budget: Math.round(Number(record.budget) * (1 + strategy) * 100) / 100,
         label: record.label || null,
-        advance_date: new Date().toISOString()
+        advanced_at: new Date().toISOString()
       }));
 
       if (newRecords.length > 0) {
@@ -245,7 +250,7 @@ export default function GoogleDashboard() {
         .from('campaigns')
         .update({ increment_strategy: strategyDecimal })
         .eq('id', campaignId);
-      
+
       if (error) throw error;
 
       await supabase.from('strategy_adjustments').insert({
@@ -349,7 +354,7 @@ export default function GoogleDashboard() {
     if (activeCampaigns.length === 0) return;
 
     const strategies = new Set(activeCampaigns.map(c => Number(c.increment_strategy)));
-    
+
     const processAdvance = async () => {
       setLoading(true);
       try {
@@ -357,12 +362,12 @@ export default function GoogleDashboard() {
           const campaignRecords = records.filter(r => r.campaign_id === camp.id && r.week_number === camp.current_week);
           let currentBudget = 0;
           if (camp.type === 'mixed_budget' || camp.type === 'adset_budget') {
-              currentBudget = campaignRecords.reduce((sum, r) => sum + Number(r.budget), 0);
+            currentBudget = campaignRecords.reduce((sum, r) => sum + Number(r.budget), 0);
           } else {
-              currentBudget = campaignRecords.find(r => !r.label)?.budget || 0;
+            currentBudget = campaignRecords.find(r => !r.label)?.budget || 0;
           }
           if (camp.target_budget && currentBudget >= camp.target_budget) continue;
-          
+
           await handleAdvanceCampaign(camp);
         }
         setShowConfirmation(prev => ({ ...prev, isOpen: false }));
@@ -428,7 +433,7 @@ export default function GoogleDashboard() {
       {!supabase && (
         <div className="mb-8 p-4 bg-destructive/10 border border-destructive/20 rounded-[1.5rem] flex items-center gap-4 text-destructive animate-in slide-in-from-top-4 duration-500">
           <div className="bg-destructive/10 p-2 rounded-xl">
-             <AlertTriangle className="w-6 h-6" />
+            <AlertTriangle className="w-6 h-6" />
           </div>
           <div>
             <p className="font-black uppercase italic text-xs tracking-widest leading-none mb-1">Base de datos no conectada</p>
@@ -462,7 +467,7 @@ export default function GoogleDashboard() {
       {/* Grid of Campaign Cards */}
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-20 reveal reveal-delay-1">
         {loading && campaigns.filter(c => c.status === 'active' && c.platform === PLATFORM).length === 0 ? (
-             Array(3).fill(0).map((_, i) => <div key={i} className="card-widget p-8 h-64 animate-pulse bg-secondary/50 border-transparent" />)
+          Array(3).fill(0).map((_, i) => <div key={i} className="card-widget p-8 h-64 animate-pulse bg-secondary/50 border-transparent" />)
         ) : campaigns.filter(c => c.status === 'active' && c.platform === PLATFORM).length === 0 ? (
           <div className="col-span-full text-center py-20 opacity-50 italic">No hay campañas de Google Ads activas</div>
         ) : (
@@ -503,7 +508,7 @@ export default function GoogleDashboard() {
         handleUpdateStrategy={handleUpdateStrategy}
       />
 
-      <NewClientModal 
+      <NewClientModal
         isOpen={isClientModalOpen}
         onClose={() => setIsClientModalOpen(false)}
         onSuccess={fetchInitialData}
@@ -519,32 +524,32 @@ export default function GoogleDashboard() {
       />
 
       <footer className="py-20 border-t border-border mt-20 opacity-60 hover:opacity-100 transition-opacity">
-         <div className="flex flex-col md:flex-row justify-between items-center gap-10">
-            <a 
-              href="https://www.fangerdesign.com.ar/" 
-              target="_blank" 
+        <div className="flex flex-col md:flex-row justify-between items-center gap-10">
+          <a
+            href="https://www.fangerdesign.com.ar/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group cursor-pointer transition-all duration-500 hover:scale-110 active:scale-95"
+          >
+            <img
+              src={theme === 'dark' ? '/Logo-Fanger.png' : '/Logo-Fanger-Footer-black-V1.0-1.png'}
+              alt="Fanger Logo"
+              className="h-8 w-auto object-contain transition-opacity duration-300 group-hover:opacity-100 opacity-80"
+            />
+          </a>
+
+          <div className="flex gap-8">
+            <a
+              href="https://ian-pontorno-portfolio.vercel.app/"
+              target="_blank"
               rel="noopener noreferrer"
-              className="group cursor-pointer transition-all duration-500 hover:scale-110 active:scale-95"
+              className="text-[10px] font-black uppercase text-muted-foreground tracking-widest hover:text-accent transition-colors"
             >
-              <img 
-                src={theme === 'dark' ? '/Logo-Fanger.png' : '/Logo-Fanger-Footer-black-V1.0-1.png'} 
-                alt="Fanger Logo" 
-                className="h-8 w-auto object-contain transition-opacity duration-300 group-hover:opacity-100 opacity-80"
-              />
+              © 2026 Ian Pontorno
             </a>
-            
-            <div className="flex gap-8">
-               <a 
-                 href="https://ian-pontorno-portfolio.vercel.app/" 
-                 target="_blank" 
-                 rel="noopener noreferrer"
-                 className="text-[10px] font-black uppercase text-muted-foreground tracking-widest hover:text-accent transition-colors"
-               >
-                 © 2026 Ian Pontorno
-               </a>
-               <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Internal Utility</span>
-            </div>
-         </div>
+            <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Internal Utility</span>
+          </div>
+        </div>
       </footer>
 
       <CampaignSidebar
@@ -560,7 +565,7 @@ export default function GoogleDashboard() {
         setShowConfirmation={setShowConfirmation}
       />
 
-      <button 
+      <button
         onClick={() => setIsSidebarOpen(true)}
         className={`fixed right-0 top-1/2 -translate-y-1/2 bg-card border border-border border-r-0 pl-4 pr-3 py-8 rounded-l-3xl shadow-[-10px_0_30px_rgba(0,0,0,0.2)] z-[90] transition-all duration-500 hover:pl-6 group flex flex-col items-center gap-4 ${isSidebarOpen ? 'translate-x-full' : 'translate-x-0'}`}
       >
